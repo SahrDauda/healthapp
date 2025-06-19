@@ -29,6 +29,7 @@ import { Slider } from "@/components/ui/slider"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "../lib/firebase"
+import { useRouter } from "next/navigation"
 
 interface PatientProfilesProps {
   onSelectPatient: (patientId: string) => void
@@ -54,6 +55,7 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
   const isMobile = useIsMobile()
   const [patients, setPatients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -85,18 +87,26 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
         const fetchedPatients: any[] = []
         querySnapshot.forEach(docSnap => {
           const data = docSnap.data()
+          // Count visits
+          let visitCount = 0
+          let lastVisitDate = null
+          let lastVisitTimestamp = null
+          for (let i = 1; i <= 8; i++) {
+            const visit = data[`visit${i}`]
+            if (visit) {
+              visitCount++
+              if (visit.updatedAt) {
+                const ts = visit.updatedAt.toDate ? visit.updatedAt.toDate() : new Date(visit.updatedAt)
+                if (!lastVisitTimestamp || ts > lastVisitTimestamp) {
+                  lastVisitTimestamp = ts
+                  lastVisitDate = ts
+                }
+              }
+            }
+          }
           const visit1 = data.visit1 || {}
           const basicInfo = visit1.basicInfo || {}
           const presentPregnancy = visit1.presentPregnancy || {}
-          // Find the latest visit and last visit date
-          let lastVisitDate = null
-          for (let i = 8; i >= 1; i--) {
-            const visit = data[`visit${i}`]
-            if (visit && visit.presentPregnancy && visit.presentPregnancy.dateOfANCContact) {
-              lastVisitDate = visit.presentPregnancy.dateOfANCContact
-              break
-            }
-          }
           fetchedPatients.push({
             id: docSnap.id,
             clientName: basicInfo.clientName || "",
@@ -107,11 +117,11 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
             trimester: presentPregnancy.trimester || "",
             dueDate: presentPregnancy.dueDate || "",
             status: basicInfo.status || "Active",
-            lastVisit: lastVisitDate ? (lastVisitDate.toDate ? lastVisitDate.toDate().toISOString().split("T")[0] : lastVisitDate) : "",
+            lastVisit: lastVisitDate ? lastVisitDate.toISOString().split("T")[0] : "",
             nextAppointment: "", // You can update this if you have a field for next appointment
             riskLevel: basicInfo.riskLevel || "",
             bloodType: basicInfo.bloodType || "",
-            visitCount: data.visits || 0,
+            visitCount: visitCount,
             totalAppointments: presentPregnancy.totalAppointments || "",
             address: basicInfo.address || "",
             emergencyContact: basicInfo.emergencyContact || "",
@@ -130,10 +140,15 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
   const filteredPatients = useMemo(() => {
     const filtered = patients.filter((patient) => {
       // Search filter
+      const lowerSearch = searchTerm.toLowerCase();
       const matchesSearch =
-        (patient.name?.toLowerCase?.() || "").includes(searchTerm.toLowerCase()) ||
-        (patient.email?.toLowerCase?.() || "").includes(searchTerm.toLowerCase()) ||
-        (patient.phone || "").includes(searchTerm)
+        (patient.name?.toLowerCase?.() || "").includes(lowerSearch) ||
+        (patient.clientName?.toLowerCase?.() || "").includes(lowerSearch) ||
+        (patient.email?.toLowerCase?.() || "").includes(lowerSearch) ||
+        (patient.phone || "").toLowerCase().includes(lowerSearch) ||
+        (patient.phoneNumber || "").toLowerCase().includes(lowerSearch) ||
+        (patient.address?.toLowerCase?.() || "").includes(lowerSearch) ||
+        (patient.riskLevel?.toLowerCase?.() || "").includes(lowerSearch);
 
       // Trimester filter
       const matchesTrimester =
@@ -296,7 +311,7 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
   const handleViewMore = () => {
     if (selectedPatient) {
       setIsModalOpen(false)
-      onSelectPatient(selectedPatient.id)
+      router.push(`/patients/${selectedPatient.id}`)
     }
   }
 
@@ -856,9 +871,9 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
               <Avatar className="h-10 w-10">
                 <AvatarImage src={`/placeholder.svg?height=40&width=40`} />
                 <AvatarFallback>
-                  {selectedPatient?.name
+                  {(selectedPatient?.name || "")
                     .split(" ")
-                    .map((n) => n[0])
+                    .map((n: string) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>

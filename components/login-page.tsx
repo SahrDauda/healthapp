@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { getAuth, signInWithEmailAndPassword, User } from "firebase/auth"
-import app from "../lib/firebase"
+import { app } from "../lib/firebase"
 
 interface LoginPageProps {
   onLogin: (credentials: { email: string; password: string; rememberMe: boolean }) => void
@@ -159,7 +159,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     <Input
                       id="email"
                       type="email"
-                      placeholder="doctor@maternalcare.com"
+                      placeholder="sahrdauda@gmail.com"
                       value={formData.email}
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       className={`pl-10 h-11 sm:h-12 text-base bg-white/70 border-maternal-green-300 focus:border-maternal-green-500 focus:ring-2 focus:ring-maternal-green-500/20 ${
