@@ -28,26 +28,22 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenuOpen = false }: DashboardHeaderProps) {
   const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
+  const [userData, setUserData] = useState({ name: "No Name" });
   const isMobileMenu = useIsMobile();
-  const [userData, setUserData] = useState({ name: "No Name", email: "doctor@maternalcare.com" });
 
   useEffect(() => {
     setMounted(true);
     const fetchUserData = async () => {
-      if (user?.uid) {
-        const db = getFirestore();
-        const userRef = doc(db, "users", user.uid); // Ensure the collection name is correct
-        const userSnap = await getDoc(userRef);
-        if (userSnap.exists()) {
-          const data = userSnap.data();
-          if (data.name && data.email) {
-            setUserData({ name: data.name, email: data.email });
-          }
-        }
+      const db = getFirestore();
+      const userRef = doc(db, "users", "9d4jeTchiRP9GKAa62r2");
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        setUserData({ name: data.name || "No Name" });
       }
     };
     fetchUserData();
-  }, [user]);
+  }, []);
 
   if (!mounted) {
     return null;
@@ -133,16 +129,14 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
                 className="flex items-center gap-2 px-2 sm:px-3 text-white-800 hover:bg-white-300 hover:text-white-900"
               >
                 <Avatar className="h-8 w-8 ring-2 ring-white-500">
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                  <AvatarFallback className="bg-gradient-to-br from-maternal-brown-400 to-maternal-brown-500 text-white-800">
-                    {user?.email ? user.email.charAt(0).toUpperCase() : "SJ"}
+                  <AvatarFallback className="bg-maternal-green-500 text-white font-bold flex items-center justify-center text-xl">
+                    {(user?.email || "?").charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 {!isMobile && (
                   <div className="hidden sm:flex flex-col items-start">
                     <span className="text-sm font-medium text-green-800">{userData.name}</span>
-                    <span className="text-xs text-white-600">{userData.email}</span>
-                    <span className="text-xs text-white-600">Maternal Health Specialist</span>
+                    <span className="text-xs text-white-600">{user?.email}</span>
                   </div>
                 )}
                 <ChevronDown className="h-4 w-4 text-white-700" />
@@ -151,9 +145,9 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
             <DropdownMenuContent align="end" className="w-56 bg-white border-white-300">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                <span className="text-sm font-medium text-green-800">{userData.name}</span>
-                <span className="text-xs text-green-600">{userData.email}</span>
-                  </div>
+                  <span className="text-sm font-medium text-green-800">{userData.name}</span>
+                  <span className="text-xs text-green-600">{user?.email}</span>
+                </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white-200" />
               <DropdownMenuItem className="text-white-700 hover:bg-white-50">

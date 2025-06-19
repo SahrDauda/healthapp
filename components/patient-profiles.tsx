@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import {
   Search,
   Users,
@@ -27,6 +27,8 @@ import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { collection, getDocs } from "firebase/firestore"
+import { db } from "../lib/firebase"
 
 interface PatientProfilesProps {
   onSelectPatient: (patientId: string) => void
@@ -42,177 +44,6 @@ interface FilterState {
   dueWithinDays: number | null
 }
 
-const patients = [
-  {
-    id: "1",
-    name: "Emma Thompson",
-    age: 28,
-    phone: "(555) 123-4567",
-    email: "emma.thompson@email.com",
-    pregnancyWeeks: 24,
-    gestationalAge: "24 weeks",
-    trimester: "2nd",
-    dueDate: "2024-08-15",
-    status: "Active",
-    lastVisit: "2024-01-15",
-    nextAppointment: "2024-02-01",
-    riskLevel: "Low",
-    bloodType: "O+",
-    emergencyContact: "John Thompson (Husband)",
-    emergencyPhone: "(555) 123-4568",
-    address: "123 Oak Street, Springfield, IL 62701",
-    visitCount: 8,
-    totalAppointments: 10,
-  },
-  {
-    id: "2",
-    name: "Maria Rodriguez",
-    age: 32,
-    phone: "(555) 234-5678",
-    email: "maria.rodriguez@email.com",
-    pregnancyWeeks: 36,
-    gestationalAge: "36 weeks",
-    trimester: "3rd",
-    dueDate: "2024-03-20",
-    status: "Active",
-    lastVisit: "2024-01-20",
-    nextAppointment: "2024-01-27",
-    riskLevel: "Medium",
-    bloodType: "A+",
-    emergencyContact: "Carlos Rodriguez (Husband)",
-    emergencyPhone: "(555) 234-5679",
-    address: "456 Pine Avenue, Springfield, IL 62702",
-    visitCount: 12,
-    totalAppointments: 14,
-  },
-  {
-    id: "3",
-    name: "Sarah Chen",
-    age: 26,
-    phone: "(555) 345-6789",
-    email: "sarah.chen@email.com",
-    pregnancyWeeks: 12,
-    gestationalAge: "12 weeks",
-    trimester: "1st",
-    dueDate: "2024-09-10",
-    status: "Active",
-    lastVisit: "2024-01-10",
-    nextAppointment: "2024-02-10",
-    riskLevel: "Low",
-    bloodType: "B+",
-    emergencyContact: "David Chen (Husband)",
-    emergencyPhone: "(555) 345-6790",
-    address: "789 Maple Drive, Springfield, IL 62703",
-    visitCount: 3,
-    totalAppointments: 4,
-  },
-  {
-    id: "4",
-    name: "Jennifer Wilson",
-    age: 35,
-    phone: "(555) 456-7890",
-    email: "jennifer.wilson@email.com",
-    pregnancyWeeks: 0,
-    gestationalAge: "Postpartum",
-    trimester: "Postpartum",
-    dueDate: "2024-01-05",
-    status: "Postpartum",
-    lastVisit: "2024-01-18",
-    nextAppointment: "2024-02-05",
-    riskLevel: "Low",
-    bloodType: "AB+",
-    emergencyContact: "Michael Wilson (Husband)",
-    emergencyPhone: "(555) 456-7891",
-    address: "321 Elm Street, Springfield, IL 62704",
-    visitCount: 15,
-    totalAppointments: 16,
-  },
-  {
-    id: "5",
-    name: "Lisa Anderson",
-    age: 29,
-    phone: "(555) 567-8901",
-    email: "lisa.anderson@email.com",
-    pregnancyWeeks: 18,
-    gestationalAge: "18 weeks",
-    trimester: "2nd",
-    dueDate: "2024-07-22",
-    status: "Active",
-    lastVisit: "2024-01-12",
-    nextAppointment: "2024-02-08",
-    riskLevel: "High",
-    bloodType: "O-",
-    emergencyContact: "Robert Anderson (Husband)",
-    emergencyPhone: "(555) 567-8902",
-    address: "654 Cedar Lane, Springfield, IL 62705",
-    visitCount: 6,
-    totalAppointments: 8,
-  },
-  {
-    id: "6",
-    name: "Amanda Foster",
-    age: 31,
-    phone: "(555) 678-9012",
-    email: "amanda.foster@email.com",
-    pregnancyWeeks: 8,
-    gestationalAge: "8 weeks",
-    trimester: "1st",
-    dueDate: "2024-10-15",
-    status: "Active",
-    lastVisit: "2024-01-22",
-    nextAppointment: "2024-02-12",
-    riskLevel: "Medium",
-    bloodType: "A-",
-    emergencyContact: "James Foster (Husband)",
-    emergencyPhone: "(555) 678-9013",
-    address: "987 Birch Road, Springfield, IL 62706",
-    visitCount: 2,
-    totalAppointments: 3,
-  },
-  {
-    id: "7",
-    name: "Rachel Kim",
-    age: 27,
-    phone: "(555) 789-0123",
-    email: "rachel.kim@email.com",
-    pregnancyWeeks: 32,
-    gestationalAge: "32 weeks",
-    trimester: "3rd",
-    dueDate: "2024-04-10",
-    status: "Active",
-    lastVisit: "2024-01-25",
-    nextAppointment: "2024-02-15",
-    riskLevel: "Low",
-    bloodType: "B-",
-    emergencyContact: "David Kim (Husband)",
-    emergencyPhone: "(555) 789-0124",
-    address: "147 Willow Street, Springfield, IL 62707",
-    visitCount: 10,
-    totalAppointments: 12,
-  },
-  {
-    id: "8",
-    name: "Nicole Brown",
-    age: 33,
-    phone: "(555) 890-1234",
-    email: "nicole.brown@email.com",
-    pregnancyWeeks: 0,
-    gestationalAge: "Postpartum",
-    trimester: "Postpartum",
-    dueDate: "2023-12-20",
-    status: "Postpartum",
-    lastVisit: "2024-01-20",
-    nextAppointment: "2024-02-20",
-    riskLevel: "Medium",
-    bloodType: "AB-",
-    emergencyContact: "Mark Brown (Husband)",
-    emergencyPhone: "(555) 890-1235",
-    address: "258 Oak Ridge, Springfield, IL 62708",
-    visitCount: 18,
-    totalAppointments: 20,
-  },
-]
-
 export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedPatient, setSelectedPatient] = useState<(typeof patients)[0] | null>(null)
@@ -221,6 +52,8 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
   const [sortBy, setSortBy] = useState("name")
   const [sortOrder, setSortOrder] = useState("asc")
   const isMobile = useIsMobile()
+  const [patients, setPatients] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -244,14 +77,63 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
     { value: "gt", label: "Greater than" },
   ]
 
+  useEffect(() => {
+    async function fetchPatients() {
+      setLoading(true)
+      try {
+        const querySnapshot = await getDocs(collection(db, "ancRecords"))
+        const fetchedPatients: any[] = []
+        querySnapshot.forEach(docSnap => {
+          const data = docSnap.data()
+          const visit1 = data.visit1 || {}
+          const basicInfo = visit1.basicInfo || {}
+          const presentPregnancy = visit1.presentPregnancy || {}
+          // Find the latest visit and last visit date
+          let lastVisitDate = null
+          for (let i = 8; i >= 1; i--) {
+            const visit = data[`visit${i}`]
+            if (visit && visit.presentPregnancy && visit.presentPregnancy.dateOfANCContact) {
+              lastVisitDate = visit.presentPregnancy.dateOfANCContact
+              break
+            }
+          }
+          fetchedPatients.push({
+            id: docSnap.id,
+            clientName: basicInfo.clientName || "",
+            age: basicInfo.age || "",
+            phoneNumber: basicInfo.phoneNumber || "",
+            email: basicInfo.email || "",
+            pregnancyWeeks: presentPregnancy.gestationalAge || "",
+            trimester: presentPregnancy.trimester || "",
+            dueDate: presentPregnancy.dueDate || "",
+            status: basicInfo.status || "Active",
+            lastVisit: lastVisitDate ? (lastVisitDate.toDate ? lastVisitDate.toDate().toISOString().split("T")[0] : lastVisitDate) : "",
+            nextAppointment: "", // You can update this if you have a field for next appointment
+            riskLevel: basicInfo.riskLevel || "",
+            bloodType: basicInfo.bloodType || "",
+            visitCount: data.visits || 0,
+            totalAppointments: presentPregnancy.totalAppointments || "",
+            address: basicInfo.address || "",
+            emergencyContact: basicInfo.emergencyContact || "",
+            emergencyPhone: basicInfo.emergencyPhone || "",
+          })
+        })
+        setPatients(fetchedPatients)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPatients()
+  }, [])
+
   // Calculate statistics with current filters
   const filteredPatients = useMemo(() => {
     const filtered = patients.filter((patient) => {
       // Search filter
       const matchesSearch =
-        patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.phone.includes(searchTerm)
+        (patient.name?.toLowerCase?.() || "").includes(searchTerm.toLowerCase()) ||
+        (patient.email?.toLowerCase?.() || "").includes(searchTerm.toLowerCase()) ||
+        (patient.phone || "").includes(searchTerm)
 
       // Trimester filter
       const matchesTrimester =
@@ -262,33 +144,33 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
       if (filters.visitCountValue > 0) {
         switch (filters.visitCountOperator) {
           case "lt":
-            matchesVisitCount = patient.visitCount < filters.visitCountValue
+            matchesVisitCount = (patient.visitCount ?? 0) < filters.visitCountValue
             break
           case "eq":
-            matchesVisitCount = patient.visitCount === filters.visitCountValue
+            matchesVisitCount = (patient.visitCount ?? 0) === filters.visitCountValue
             break
           case "gte":
-            matchesVisitCount = patient.visitCount >= filters.visitCountValue
+            matchesVisitCount = (patient.visitCount ?? 0) >= filters.visitCountValue
             break
           case "gt":
-            matchesVisitCount = patient.visitCount > filters.visitCountValue
+            matchesVisitCount = (patient.visitCount ?? 0) > filters.visitCountValue
             break
         }
       }
 
       // Risk level filter
-      const matchesRiskLevel = filters.riskLevel.length === 0 || filters.riskLevel.includes(patient.riskLevel)
+      const matchesRiskLevel = filters.riskLevel.length === 0 || filters.riskLevel.includes(patient.riskLevel || "")
 
       // Status filter
-      const matchesStatus = filters.status.length === 0 || filters.status.includes(patient.status)
+      const matchesStatus = filters.status.length === 0 || filters.status.includes(patient.status || "")
 
       // Age range filter
-      const matchesAge = patient.age >= filters.ageRange[0] && patient.age <= filters.ageRange[1]
+      const matchesAge = (patient.age ?? 0) >= filters.ageRange[0] && (patient.age ?? 0) <= filters.ageRange[1]
 
       // Due within days filter
       let matchesDueDate = true
       if (filters.dueWithinDays !== null && patient.status === "Active") {
-        const dueDate = new Date(patient.dueDate)
+        const dueDate = new Date(patient.dueDate || "")
         const today = new Date()
         const diffTime = dueDate.getTime() - today.getTime()
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
@@ -312,14 +194,14 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
       let bValue: any = b[sortBy as keyof typeof b]
 
       if (sortBy === "name") {
-        aValue = a.name.toLowerCase()
-        bValue = b.name.toLowerCase()
+        aValue = (a.name?.toLowerCase?.() || "")
+        bValue = (b.name?.toLowerCase?.() || "")
       } else if (sortBy === "age" || sortBy === "visitCount" || sortBy === "pregnancyWeeks") {
-        aValue = Number(aValue)
-        bValue = Number(bValue)
+        aValue = Number(aValue ?? 0)
+        bValue = Number(bValue ?? 0)
       } else if (sortBy === "lastVisit" || sortBy === "dueDate") {
-        aValue = new Date(aValue)
-        bValue = new Date(bValue)
+        aValue = new Date(aValue || "1970-01-01")
+        bValue = new Date(bValue || "1970-01-01")
       }
 
       if (sortOrder === "asc") {
@@ -330,7 +212,7 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
     })
 
     return filtered
-  }, [searchTerm, filters, sortBy, sortOrder])
+  }, [searchTerm, filters, sortBy, sortOrder, patients])
 
   const totalPatients = patients.length
   const activePatients = filteredPatients.filter((p) => p.status === "Active").length
@@ -434,16 +316,16 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
           <Avatar className="h-12 w-12">
             <AvatarImage src={`/placeholder.svg?height=48&width=48`} />
             <AvatarFallback>
-              {patient.name
+              {(patient.clientName || patient.name || "")
                 .split(" ")
-                .map((n) => n[0])
+                .map((n: string) => n[0])
                 .join("")}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="font-semibold text-base truncate">{patient.name}</h3>
+                <h3 className="font-semibold text-base truncate">{patient.clientName || patient.name}</h3>
                 <p className="text-sm text-muted-foreground">Age: {patient.age}</p>
               </div>
               <div className="flex flex-col gap-1">
@@ -711,14 +593,14 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
                             <AvatarFallback className="text-xs">
-                              {patient.name
+                              {(patient.clientName || patient.name || "")
                                 .split(" ")
-                                .map((n) => n[0])
+                                .map((n: string) => n[0])
                                 .join("")}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium">{patient.name}</div>
+                            <div className="font-medium">{patient.clientName || patient.name}</div>
                             <div className="text-sm text-muted-foreground">{patient.email}</div>
                           </div>
                         </div>
