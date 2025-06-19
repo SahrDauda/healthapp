@@ -1,5 +1,6 @@
 "use client"
 
+import React, { useState, useEffect } from "react";
 import { ArrowLeft, Phone, Mail, Calendar, Pill, FileText, Heart } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,49 +9,104 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 
+import { getFirestore, collection, getDocs } from "firebase/firestore";
+
 interface PatientDetailProps {
   patientId: string
   onBack: () => void
 }
 
-const patientData = {
-  "1": {
-    name: "Emma Thompson",
-    age: 28,
-    phone: "(555) 123-4567",
-    email: "emma.thompson@email.com",
-    address: "123 Oak Street, Springfield, IL 62701",
-    emergencyContact: "John Thompson (Husband) - (555) 123-4568",
-    pregnancyWeeks: 24,
-    trimester: "2nd",
-    dueDate: "2024-08-15",
-    status: "Active",
-    riskLevel: "Low",
-    bloodType: "O+",
-    height: "5'6\"",
-    prePregnancyWeight: "140 lbs",
-    currentWeight: "158 lbs",
-    medicalHistory: ["No chronic conditions", "Previous pregnancy: 2021 (Normal delivery)", "No known allergies"],
-    currentMedications: ["Prenatal vitamins (daily)", "Folic acid 400mcg (daily)", "Iron supplement 65mg (daily)"],
-    labResults: [
-      { test: "Hemoglobin", value: "12.5 g/dL", date: "2024-01-15", status: "Normal" },
-      { test: "Glucose", value: "95 mg/dL", date: "2024-01-15", status: "Normal" },
-      { test: "Blood Pressure", value: "118/76 mmHg", date: "2024-01-15", status: "Normal" },
-      { test: "Protein in Urine", value: "Negative", date: "2024-01-15", status: "Normal" },
-    ],
-    appointments: [
-      { date: "2024-02-01", time: "10:00 AM", type: "Prenatal Check-up", status: "Scheduled" },
-      { date: "2024-01-15", time: "2:00 PM", type: "Prenatal Check-up", status: "Completed" },
-      { date: "2023-12-18", time: "11:00 AM", type: "Ultrasound", status: "Completed" },
-    ],
-  },
-}
+import React, { useState, useEffect } from "react";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
-export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
-  const patient = patientData[patientId as keyof typeof patientData]
+// Remove the hardcoded patientData object
+
+export function PatientDetail({ patientId, onBack }: { patientId: string; onBack: () => void }) {
+  const [patient, setPatient] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchPatient() {
+      setLoading(true);
+      setError(null);
+      try {
+        const docRef = doc(db, "ancRecords", patientId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          // Assuming the patient data is nested under visit1.basicInfo as per Firestore structure
+          const patientData = data.visit1?.basicInfo || null;
+          if (patientData) {
+            setPatient(patientData);
+          } else {
+            setError("Patient data not found in document.");
+          }
+        } else {
+          setError("No such patient document.");
+        }
+      } catch (err) {
+        setError("Failed to fetch patient data.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPatient();
+  }, [patientId]);
+
+  if (loading) {
+    return <div>Loading patient data...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   if (!patient) {
-    return <div>Patient not found</div>
+    return <div>Patient not found</div>;
+  }
+
+  // Render patient details here using the patient state
+  return (
+    <div>
+      <button onClick={onBack}>Back</button>
+      <h1>{patient.clientName}</h1>
+      <p>Age: {patient.age}</p>
+      <p>Address: {patient.address}</p>
+      <p>Blood Group: {patient.bloodGroup}</p>
+      <p>Client Number: {patient.clientNumber}</p>
+      <p>NIN: {patient.nin}</p>
+      <p>Phone Number: {patient.phoneNumber}</p>
+      <p>Responsible Person: {patient.responsiblePerson}</p>
+    </div>
+  );
+}
+
+
+const fetchPatientData = async () => {
+  const db = getFirestore();
+  const ancRecordRef = collection(db, "ancRecord");
+  const querySnapshot = await getDocs(ancRecordRef);
+  const patients = querySnapshot.docs.map(doc => doc.data());
+  return patients;
+};
+
+export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
+  const [patientData, setPatientData] = useState<any>(null);
+
+  useEffect(() => {
+    const loadPatientData = async () => {
+      const data = await fetchPatientData();
+      const patient = data.find(p => p.clientNumber === patientId);
+      setPatientData(patient);
+    };
+    loadPatientData();
+  }, [patientId]);
+
+  if (!patientData) {
+    return <div>Loading...</div>;
   }
 
   return (
@@ -60,7 +116,7 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-3xl font-bold">{patient.name}</h1>
+          <h1 className="text-3xl font-bold">{patientData.clientName}</h1>
           <p className="text-muted-foreground">Patient Medical Record</p>
         </div>
       </div>
@@ -73,18 +129,18 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={`/placeholder.svg?height=64&width=64`} />
                   <AvatarFallback className="text-lg">
-                    {patient.name
+                    {patientData.clientName
                       .split(" ")
-                      .map((n) => n[0])
+                      .map((n: string) => n[0])
                       .join("")}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <CardTitle className="text-xl">{patient.name}</CardTitle>
-                  <p className="text-muted-foreground">Age: {patient.age}</p>
+                  <CardTitle className="text-xl">{patientData.clientName}</CardTitle>
+                  <p className="text-muted-foreground">Age: {patientData.age}</p>
                   <div className="flex gap-2 mt-2">
-                    <Badge variant="default">{patient.status}</Badge>
-                    <Badge variant="outline">{patient.riskLevel} Risk</Badge>
+                    <Badge variant="default">Active</Badge>
+                    <Badge variant="outline">Low Risk</Badge>
                   </div>
                 </div>
               </div>
@@ -93,28 +149,11 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{patient.phone}</span>
+                  <span className="text-sm">{patientData.phoneNumber}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">{patient.email}</span>
-                </div>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <h4 className="font-medium">Pregnancy Status</h4>
-                <div className="text-sm space-y-1">
-                  <p>
-                    <span className="font-medium">Weeks:</span> {patient.pregnancyWeeks}
-                  </p>
-                  <p>
-                    <span className="font-medium">Trimester:</span> {patient.trimester}
-                  </p>
-                  <p>
-                    <span className="font-medium">Due Date:</span> {new Date(patient.dueDate).toLocaleDateString()}
-                  </p>
+                  <span className="text-sm">{patientData.address}</span>
                 </div>
               </div>
 
@@ -124,130 +163,18 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                 <h4 className="font-medium">Vital Information</h4>
                 <div className="text-sm space-y-1">
                   <p>
-                    <span className="font-medium">Blood Type:</span> {patient.bloodType}
+                    <span className="font-medium">Blood Type:</span> {patientData.bloodGroup}
                   </p>
                   <p>
-                    <span className="font-medium">Height:</span> {patient.height}
-                  </p>
-                  <p>
-                    <span className="font-medium">Current Weight:</span> {patient.currentWeight}
+                    <span className="font-medium">NIN:</span> {patientData.nin}
                   </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
-
-        <div className="lg:col-span-2">
-          <Tabs defaultValue="medical" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="medical">Medical History</TabsTrigger>
-              <TabsTrigger value="medications">Medications</TabsTrigger>
-              <TabsTrigger value="labs">Lab Results</TabsTrigger>
-              <TabsTrigger value="appointments">Appointments</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="medical" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
-                    Medical History
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {patient.medicalHistory.map((item, index) => (
-                      <li key={index} className="flex items-start gap-2">
-                        <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="medications" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Pill className="h-5 w-5" />
-                    Current Medications
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-3">
-                    {patient.currentMedications.map((medication, index) => (
-                      <li key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                        <span>{medication}</span>
-                        <Badge variant="outline">Active</Badge>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="labs" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Heart className="h-5 w-5" />
-                    Recent Lab Results
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {patient.labResults.map((result, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{result.test}</p>
-                          <p className="text-sm text-muted-foreground">{result.date}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">{result.value}</p>
-                          <Badge variant={result.status === "Normal" ? "outline" : "destructive"}>
-                            {result.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="appointments" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5" />
-                    Appointment History
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {patient.appointments.map((appointment, index) => (
-                      <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div>
-                          <p className="font-medium">{appointment.type}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {appointment.date} at {appointment.time}
-                          </p>
-                        </div>
-                        <Badge variant={appointment.status === "Completed" ? "outline" : "default"}>
-                          {appointment.status}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </div>
       </div>
     </div>
-  )
+  );
 }
+

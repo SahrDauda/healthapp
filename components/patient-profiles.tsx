@@ -527,25 +527,25 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-red-600 to-red-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">High Risk Patients</CardTitle>
-            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{highRiskPatients}</div>
-            <p className="text-xs text-muted-foreground">Requiring special attention</p>
+            <p className="text-xs text-muted-foreground-white">Requiring special attention</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-yellow-600 to-yellow-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Due Soon</CardTitle>
-            <Baby className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Baby className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{dueSoon}</div>
-            <p className="text-xs text-muted-foreground">Due within 30 days</p>
+            <p className="text-xs text-muted-foreground-white">Due within 30 days</p>
           </CardContent>
         </Card>
       </div>

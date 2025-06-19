@@ -125,15 +125,15 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-600 to-yellow-700 text-black">
+        <Card className="bg-gradient-to-br from-yellow-600 to-yellow-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Births This Month</CardTitle>
-            <Baby className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Baby className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">4</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 flex items-center">
+              <span className="text-black flex items-center">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 +1 from last month
               </span>
