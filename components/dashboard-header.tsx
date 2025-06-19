@@ -15,6 +15,7 @@ import {
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { useAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useEffect, useState } from "react"
 
 interface DashboardHeaderProps {
   onLogout: () => void
@@ -24,10 +25,17 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenuOpen = false }: DashboardHeaderProps) {
+  const [mounted, setMounted] = useState(false);
   const { user } = useAuth();
   const isMobileMenu = useIsMobile();
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  if (!mounted) {
+    return null;
+  }
   return (    
-    <header className="sticky top-0 z-50 w-full border-b border-green-300 bg-gradient-to-r from-green-200 to-green-300 backdrop-blur supports-[backdrop-filter]:bg-green-200/90">
+    <header className="sticky top-0 z-50 w-full border-b border-white-300 bg-white backdrop-blur supports-[backdrop-filter]:bg-white-200/90">
       <div className="flex h-16 items-center justify-between px-4 gap-4">
         {/* Mobile Hamburger Menu Toggle */}
         {isMobileMenu ? ( 
@@ -35,7 +43,7 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
             variant="ghost"
             size="icon"
             onClick={onMenuToggle}
-            className="relative z-50 text-green-800 hover:bg-green-300 hover:text-green-900"
+            className="relative z-50 text-white-800 hover:bg-white-300 hover:text-white-900"
             aria-label="Toggle navigation menu"
           >
             <div className="flex flex-col justify-center items-center w-5 h-5">
@@ -63,10 +71,10 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
         {/* Logo/Title for Mobile */}
         {isMobile && (
           <div className="flex items-center gap-2 flex-1">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-green-600 to-green-700">
-              <span className="text-green-800 text-xs font-bold">H</span>
+            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-white-600 to-white-700">
+              <span className="text-white-800 text-xs font-bold">H</span>
             </div>
-            <h1 className="text-lg font-semibold text-green-800">HealthyMother</h1>
+            <h1 className="text-lg font-semibold text-white-800">HealthyMother</h1>
           </div>
         )}
 
@@ -79,75 +87,74 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
 
         {/* Date and Time - Hidden on Mobile */}
         {!isMobile && (
-          <div className="hidden md:flex flex-col items-end text-sm text-green-600">
+          <div className="hidden md:flex flex-col items-end text-sm text-white-600">
             {/* Date/time display can be added here */}
           </div>
         )}
+    <h1 className="text-black font-bold">App Admin Panel</h1>
+    {/* Right-aligned items container */}
+    <div className="flex items-center gap-3 ml-auto">
+      {/* Notifications */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative text-white-800 hover:bg-white-300 hover:text-white-900"
+      >
+        <Bell className="h-5 w-5" />
+        <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-white-600 text-white-800 border-white-700">
+          3
+        </Badge>
+      </Button>
 
-        {/* Right-aligned items container */}
-        <div className="flex items-center gap-3 ml-auto">
-          {/* Notifications */}
+      {/* User Menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            size="icon"
-            className="relative text-green-800 hover:bg-green-300 hover:text-green-900"
+            className="flex items-center gap-2 px-2 sm:px-3 text-white-800 hover:bg-white-300 hover:text-white-900"
           >
-            <Bell className="h-5 w-5" />
-            <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-green-600 text-green-800 border-green-700">
-              3
-            </Badge>
+            <Avatar className="h-8 w-8 ring-2 ring-white-500">
+              <AvatarImage src="/placeholder.svg?height=32&width=32" />
+              <AvatarFallback className="bg-gradient-to-br from-maternal-brown-400 to-maternal-brown-500 text-white-800">
+                SJ
+              </AvatarFallback>
+            </Avatar>
+            {!isMobile && (
+              <div className="hidden sm:flex flex-col items-start">
+                <span className="text-sm font-medium text-green-800">{user?.displayName || "No Name"}</span>
+                <span className="text-xs text-white-600">{user?.email || "doctor@maternalcare.com"}</span>
+                <span className="text-xs text-white-600">Maternal Health Specialist</span>
+              </div>
+            )}
+            <ChevronDown className="h-4 w-4 text-white-700" />
           </Button>
-
-          {/* User Menu */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="flex items-center gap-2 px-2 sm:px-3 text-green-800 hover:bg-green-300 hover:text-green-900"
-              >
-                <Avatar className="h-8 w-8 ring-2 ring-green-500">
-                  <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                  <AvatarFallback className="bg-gradient-to-br from-maternal-brown-400 to-maternal-brown-500 text-green-800">
-                    SJ
-                  </AvatarFallback>
-                </Avatar>
-                {!isMobile && (
-                  <div className="hidden sm:flex flex-col items-start">
-                    <span className="text-sm font-medium text-green-800">{user?.displayName || "Dr. Sarah Johnson"}</span>
-                    <span className="text-xs text-green-600">{user?.email || "doctor@maternalcare.com"}</span>
-                    <span className="text-xs text-green-600">Maternal Health Specialist</span>
-                  </div>
-                )}
-                <ChevronDown className="h-4 w-4 text-green-700" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 bg-white border-green-300">
-              <DropdownMenuLabel>
-                <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium text-green-800">Dr. Sarah Johnson</p>
-                  <p className="text-xs text-green-600">doctor@maternalcare.com</p>
-                </div>
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-green-200" />
-              <DropdownMenuItem className="text-green-700 hover:bg-green-50">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem className="text-green-700 hover:bg-green-50">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-green-200" />
-              <DropdownMenuItem onClick={onLogout} className="text-red-600 hover:bg-red-50 focus:bg-red-50">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Sign out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-    </header>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56 bg-white border-white-300">
+          <DropdownMenuLabel>
+            <div className="flex flex-col space-y-1">
+            <span className="text-sm font-medium text-green-800">{user?.displayName || "No Name"}</span>
+            <span className="text-xs text-green-600">{user?.email || "doctor@maternalcare.com"}</span>
+              </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator className="bg-white-200" />
+          <DropdownMenuItem className="text-white-700 hover:bg-white-50">
+            <User className="mr-2 h-4 w-4" />
+            <span>Profile</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-white-700 hover:bg-white-50">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="bg-white-200" />
+          <DropdownMenuItem onClick={onLogout} className="text-red-600 hover:bg-red-50 focus:bg-red-50">
+            <LogOut className="mr-2 h-4 w-4" />
+            <span>Sign out</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  </div>
+</header>
   )
 }
 
-const { user } = useAuth();

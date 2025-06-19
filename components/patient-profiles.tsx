@@ -505,25 +505,25 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
 
       {/* Statistics Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="bg-gradient-to-br from-green-600 to-green-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Filtered Results</CardTitle>
-            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{filteredPatients.length}</div>
-            <p className="text-xs text-muted-foreground">of {totalPatients} total patients</p>
+            <p className="text-xs text-muted-foreground-black">of {totalPatients} total patients</p>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Active Pregnancies</CardTitle>
-            <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium text-white">Active Pregnancies</CardTitle>
+            <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{activePatients}</div>
-            <p className="text-xs text-muted-foreground">Currently under prenatal care</p>
+            <p className="text-xs text-muted-foreground-black">Currently under prenatal care</p>
           </CardContent>
         </Card>
 

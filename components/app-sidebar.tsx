@@ -27,7 +27,7 @@ const menuItems = [
     id: "dashboard",
   },
   {
-    title: "Patient Profiles",
+    title: "Patients",
     icon: Users,
     id: "patients",
     badge: "24",
@@ -68,8 +68,8 @@ const menuItems = [
 
 export function AppSidebar({ activeView, onViewChange }: AppSidebarProps) {
   return (
-    <Sidebar className="border-r border-maternal-green-200">
-      <SidebarHeader className="p-4 bg-gradient-to-b from-maternal-green-200 to-maternal-green-300">
+    <Sidebar className="">
+      <SidebarHeader className="p-4 bg-gradient-to-b from-maternal-white-200 to-maternal-white-300">
         <div className="flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-maternal-green-500 to-maternal-green-600 shadow-sm">
             <Heart className="h-4 w-4 text-white" />
@@ -81,7 +81,7 @@ export function AppSidebar({ activeView, onViewChange }: AppSidebarProps) {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="bg-gradient-to-b from-green-100 to-green-200">
+      <SidebarContent className="bg-gradient-to-b from-white-100 to-white-200">
         <SidebarGroup>
           <SidebarGroupLabel className="text-green-800 font-medium">Dashboard</SidebarGroupLabel>
           <SidebarGroupContent>
@@ -119,7 +119,7 @@ export function AppSidebar({ activeView, onViewChange }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 bg-gradient-to-t from-green-200 to-green-100 border-t border-green-300">
+      <SidebarFooter className="p-4 bg-gradient-to-t from-white-200 to-white-100 border-t border-white-300">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton className="text-green-700 hover:bg-green-300 hover:text-green-900 transition-colors">

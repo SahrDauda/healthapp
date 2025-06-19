@@ -77,15 +77,15 @@ export function DashboardOverview() {
 
       {/* Key Metrics Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="bg-gradient-to-br from-green-600 to-green-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Total Patients</CardTitle>
-            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{totalPatients}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 flex items-center">
+              <span className="text-black flex items-center">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 +12% from last month
               </span>
@@ -93,15 +93,15 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">This Week's Appointments</CardTitle>
-            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{totalAppointmentsThisWeek}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-green-600 flex items-center">
+              <span className="text-black flex items-center">
                 <TrendingUp className="h-3 w-3 mr-1" />
                 +8% from last week
               </span>
@@ -109,15 +109,15 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-red-600 to-red-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">High Risk Patients</CardTitle>
-            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+            <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{highRiskPatients}</div>
             <p className="text-xs text-muted-foreground">
-              <span className="text-red-600 flex items-center">
+              <span className="text-black flex items-center">
                 <TrendingDown className="h-3 w-3 mr-1" />
                 -2 from last month
               </span>
@@ -125,7 +125,7 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-green-600 to-yellow-700 text-black">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-xs sm:text-sm font-medium">Births This Month</CardTitle>
             <Baby className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
