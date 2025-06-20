@@ -1,222 +1,230 @@
-# HealthyMother - Maternal Health Dashboard
 
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
-![Next.js](https://img.shields.io/badge/next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)
-![Firebase](https://img.shields.io/badge/firebase-ffca28?style=for-the-badge&logo=firebase&logoColor=black)
-![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge&logo=tailwind-css&logoColor=white)
+# 🌸 HealthyMother — Empowering Maternal Health with Technology
 
----
-
-## Team Members
-
-- Ibrahim Success Swaray
-- Peter George
-- Aisha Suma
-- Joyce Thomas
-- Emmanuel Sahr Dauda
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge\&logo=react\&logoColor=%2361DAFB)
+![Next.js](https://img.shields.io/badge/next.js-000000?style=for-the-badge\&logo=next.js\&logoColor=white)
+![Firebase](https://img.shields.io/badge/firebase-ffca28?style=for-the-badge\&logo=firebase\&logoColor=black)
+![TailwindCSS](https://img.shields.io/badge/tailwindcss-%2338B2AC.svg?style=for-the-badge\&logo=tailwind-css\&logoColor=white)
 
 ---
 
-## 1. Project Description
+## 👩‍⚕️ About the Project
 
-**HealthyMother** is a comprehensive, full-stack dashboard designed to empower healthcare providers in managing maternal care. It provides a centralized, secure, and intuitive platform for patient monitoring, internal reporting, and targeted communication. The system is built with a modern tech stack to ensure a responsive, scalable, and real-time user experience.
+**HealthyMother** is more than just a dashboard — it's a purpose-built platform designed to revolutionize how maternal health is managed. Our full-stack application offers healthcare providers a streamlined, secure, and real-time toolset for supporting expectant mothers across every trimester.
 
-The core mission of this platform is to streamline clinical workflows, improve data accessibility for care providers, and facilitate better health outcomes for expectant mothers through features like trimester-based patient views, dynamic reporting, and instant broadcast messaging.
-
----
-
-## 2. Key Features
-
-- **Secure Authentication:** Robust email and password login system powered by Firebase Authentication, with protected routes to secure dashboard access.
-- **Dynamic Dashboard:** A central hub displaying key metrics and an overview of clinic activities.
-- **Patient Profiles Management:**
-  - View, search, and filter a complete list of patient profiles.
-  - Dynamic patient count badges that update with filters.
-  - Detailed patient view with trimester-specific information.
-- **Whistleblower/User Reporting:**
-  - A secure and anonymous reporting system for users to submit feedback or concerns.
-  - A dedicated report management view with statistics on total, unique, and anonymous reports.
-  - Advanced search and filtering capabilities for all reports.
-- **Notification & Broadcast System:**
-  - Create and send broadcast messages to specific patient categories (e.g., by trimester, high-risk).
-  - Schedule messages to be sent at a future date and time.
-  - View a complete history of all sent, pending, and delivered notifications.
-- **Real-time Database Integration:** All application data is powered by a live connection to Google Firestore, ensuring data is always up-to-date.
-- **Responsive & Modern UI:** Professionally designed with Tailwind CSS and Shadcn/UI for a seamless experience on both desktop and mobile devices.
+From insightful clinical reporting to intelligent communication tools, **HealthyMother** delivers everything you need to improve maternal outcomes — all wrapped in a sleek, responsive interface.
 
 ---
 
-## 3. Tech Stack
+## 👥 Meet the Dream Team
 
-- **Frontend:**
-  - **Framework:** Next.js 14+ (React 18)
-  - **Language:** TypeScript
-  - **Styling:** Tailwind CSS
-  - **UI Components:** Shadcn/UI, Radix UI
-  - **Icons:** Lucide React
-  - **Forms:** React Hook Form, Zod
-  - **Charts:** Recharts
-- **Backend & Database:**
-  - **Service:** Firebase
-  - **Authentication:** Firebase Authentication
-  - **Database:** Google Firestore (NoSQL)
-- **Development Tools:**
-  - **Linting:** ESLint
-  - **Package Manager:** npm / pnpm / yarn
+* Ibrahim Success Swaray
+* Peter George
+* Aisha Suma
+* Joyce Thomas
+* Emmanuel Sahr Dauda
 
 ---
 
-## 4. Getting Started
+## ✨ Key Features
 
-Follow these instructions to set up and run the project locally.
+Here’s what makes HealthyMother stand out:
 
-### 4.1. Prerequisites
+* 🔐 **Secure Login**
+  Firebase Authentication keeps user data safe with robust email/password protection and protected routes.
 
-- **Node.js:** v18.17.0 or later.
-- **Package Manager:** npm, pnpm, or yarn.
-- **Firebase Account:** A Google account to create a Firebase project.
+* 📊 **Insightful Dashboard**
+  At-a-glance stats and clinic metrics designed for quick decision-making.
 
-### 4.2. Installation
+* 🧑‍⚕️ **Smart Patient Management**
 
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/SahrDauda/healthapp.git
-    cd healthapp
-    ```
+  * Search, filter, and browse patient profiles with ease.
+  * Dynamic trimester-based insights for individualized care.
+  * Auto-updating patient count badges.
 
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    # OR
-    pnpm install
-    # OR
-    yarn install
-    ```
+* 🛡️ **Whistleblower & Feedback System**
 
-### 4.3. Firebase Setup
+  * Fully anonymous reporting system for safer and more transparent healthcare.
+  * Searchable reports dashboard with real-time stats.
 
-This project requires a Firebase project to handle authentication and the database.
+* 📣 **Broadcast Messaging System**
 
-1.  **Create a Firebase Project:**
-    - Go to the [Firebase Console](https://console.firebase.google.com/).
-    - Click **"Add project"** and follow the on-screen instructions.
+  * Targeted alerts by trimester, condition, or risk category.
+  * Schedule messages for later — or send instantly.
+  * Full history log of all notifications.
 
-2.  **Create a Web App:**
-    - Inside your new project, click the Web icon (`</>`) to create a new web application.
-    - Register the app, and Firebase will provide you with a `firebaseConfig` object. **Copy this object.**
+* 🔄 **Real-time Data Sync**
+  Powered by Firestore for immediate updates — no refresh required.
 
-3.  **Configure Environment Variables:**
-    - In the root of your project directory, create a file named `.env.local`.
-    - Paste the `firebaseConfig` values into this file, formatted as follows:
-
-    ```env
-    NEXT_PUBLIC_FIREBASE_API_KEY="your-api-key"
-    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your-auth-domain"
-    NEXT_PUBLIC_FIREBASE_PROJECT_ID="your-project-id"
-    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your-storage-bucket"
-    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
-    NEXT_PUBLIC_FIREBASE_APP_ID="your-app-id"
-    ```
-
-4.  **Update Firebase Initialization:**
-    - Go to the `lib/firebase.js` file.
-    - Replace the existing hardcoded configuration with the environment variables to securely load your project's credentials.
-
-5.  **Enable Firebase Services:**
-    - In the Firebase Console, navigate to the **Authentication** section and enable the **"Email/Password"** sign-in provider.
-    - Navigate to the **Firestore Database** section and create a database. Start in **test mode** for initial development (this allows open read/write access).
-      - **For production, you must secure your data.** Implement Firestore Security Rules to control access to your collections (e.g., `report`, `notifications`, `ancRecords`).
-
-### 4.4. Running the Application
-
-1.  **Start the development server:**
-    ```bash
-    npm run dev
-    ```
-
-2.  **Open in browser:**
-    - The application will be available at [http://localhost:3000](http://localhost:3000).
+* 💅 **Beautiful & Responsive UI**
+  Crafted with Tailwind CSS + Shadcn/UI for a modern, mobile-friendly experience.
 
 ---
 
-## 5. API Reference & External Services
+## 🛠️ Built With
 
-- **Primary API:** Google Firebase (Authentication & Firestore)
-- This project does not consume any other third-party APIs.
+### Frontend
+
+* **Next.js 14+** (React 18)
+* **TypeScript**
+* **Tailwind CSS** for styling
+* **Shadcn/UI**, **Radix UI** for components
+* **Lucide React** for icons
+* **React Hook Form** + **Zod** for forms
+* **Recharts** for data visualization
+
+### Backend
+
+* **Firebase** for hosting, authentication, and database
+* **Firestore (NoSQL)** for real-time storage
+
+### Developer Tools
+
+* **ESLint**
+* **npm / pnpm / yarn**
 
 ---
 
-## 6. License
+## 🚀 Getting Started
 
-This project is not currently licensed. Please add a license file if you wish to distribute or open-source this work.
+Follow these simple steps to launch the project locally:
+
+### 📋 Prerequisites
+
+* Node.js ≥ 18.17.0
+* Any package manager: `npm`, `pnpm`, or `yarn`
+* A Firebase account
+
+### 📦 Installation
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/SahrDauda/healthapp.git
+   cd healthapp
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   # OR
+   pnpm install
+   # OR
+   yarn install
+   ```
 
 ---
 
-## 7. Database Schema
+### 🔧 Firebase Setup
 
-The application uses Google Firestore for its database. Below is the schema for the main collections.
+1. **Create a Firebase project**:
+   Go to [Firebase Console](https://console.firebase.google.com/) → *Add Project*
+
+2. **Register a Web App** inside Firebase and copy the `firebaseConfig` object provided.
+
+3. **Add environment variables**:
+   Create `.env.local` in your root directory and paste the config like so:
+
+   ```env
+   NEXT_PUBLIC_FIREBASE_API_KEY="your-api-key"
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN="your-auth-domain"
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID="your-project-id"
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET="your-storage-bucket"
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID="your-sender-id"
+   NEXT_PUBLIC_FIREBASE_APP_ID="your-app-id"
+   ```
+
+4. **Update `lib/firebase.js`** to use these env variables securely.
+
+5. **Enable Firebase Services**:
+
+   * Go to **Authentication** → Enable "Email/Password"
+   * Go to **Firestore** → Create a DB in test mode for development
+   * ⚠️ **Don’t forget to set proper security rules before production!**
+
+---
+
+### 🧪 Run the App
+
+```bash
+npm run dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000) in your browser — and you're live!
+
+---
+
+## 📡 API & External Services
+
+* **Primary API:** Google Firebase
+  No third-party APIs are used — everything is powered by Firebase.
+
+---
+
+## 🗃️ Firestore Database Schema
 
 ### `ancRecords`
 
-This collection stores all data related to a patient's antenatal care visits. Each document typically represents a single patient.
+Tracks detailed antenatal care visits per patient.
+
+<details>
+<summary>Click to view structure</summary>
 
 ```
-ancRecords (collection)
-└─ <document_id> (e.g., patient's unique ID)
+ancRecords
+└─ <patient_id>
    ├── clientNumber: string
-   ├── visits: number (Count of completed visits)
+   ├── visits: number
    ├── updatedAt: timestamp
-   │
-   ├─ visit1 (map)
-   │   ├─ basicInfo (map)
-   │   │   ├─ clientNumber: string
-   │   │   ├─ phoneNumber: string
-   │   │   └─ clientName: string
-   │   ├─ facilityInfo (map)
-   │   │   ├─ name: string
-   │   │   └─ facilityAddress: string
-   │   ├─ pastPregnancyHistory (map)
-   │   │   ├─ totalPregnancies: number
-   │   │   ├─ liveBirths: number
-   │   │   ├─ miscarriages: number
-   │   │   ├─ abortions: number
-   │   │   └─ previousPregnancies: array
-   │   └─ presentPregnancy (map)
-   │       ├─ gestationalAge: number
-   │       ├─ dateOfANCContact: timestamp
-   │       ├─ pp1_bp: string
-   │       └─ pp15_weight: number
-   │
-   ├─ visit2 (map) - (same structure as visit1)
-   └─ ... (up to visit8)
-
+   ├─ visit1
+   │   ├─ basicInfo: { clientName, phoneNumber, ... }
+   │   ├─ facilityInfo: { name, address }
+   │   ├─ pastPregnancyHistory
+   │   └─ presentPregnancy: { gestationalAge, bp, weight, ... }
+   ├─ visit2 ...
 ```
+
+</details>
+
+---
 
 ### `notifications`
 
-This collection stores all broadcast messages sent or scheduled through the dashboard.
+Stores all broadcast messages and delivery info.
 
--   `createdAt` (timestamp): The time the notification was created.
--   `message` (string): The content of the notification message.
--   `scheduledAt` (timestamp | null): If scheduled, the time it's set to deliver.
--   `status` (string): The delivery status (e.g., "sent", "pending", "delivered").
--   `targetCategories` (array of strings): The patient groups targeted (e.g., ["all"], ["high_risk"]).
--   `title` (string): The title of the broadcast.
--   `type` (string): The type of notification (e.g., "broadcast").
+```
+notifications
+├── createdAt: timestamp
+├── message: string
+├── scheduledAt: timestamp | null
+├── status: string
+├── targetCategories: string[]
+├── title: string
+├── type: string
+```
+
+---
 
 ### `report`
 
-This collection stores all reports submitted by users through the whistleblower feature.
+Logs whistleblower submissions and feedback.
 
--   `clientName` (string): The name of the patient.
--   `clientNumber` (string): The unique identifier of the patient.
--   `createdAt` (timestamp): The time the report was submitted.
--   `description` (string): The detailed content of the report.
--   `facilityName` (string): The name of the facility being reported.
--   `fileUrls` (array of strings): URLs to any files attached to the report.
--   `isAnonymous` (boolean): Whether the report was submitted anonymously.
--   `phoneNumber` (string): The contact number of the reporter.
--   `reportType` (string): The category or type of the report (e.g., "Lab Technician").
+```
+report
+├── clientName: string
+├── clientNumber: string
+├── createdAt: timestamp
+├── description: string
+├── facilityName: string
+├── fileUrls: string[]
+├── isAnonymous: boolean
+├── phoneNumber: string
+├── reportType: string
+```
 
-## 6. License
-This project is not currently licensed. Please add a license file if you wish to distribute or open-source this work.
+---
+
+## 📝 License
+
+This project is currently **not licensed**. If you plan to share, open-source, or build upon this project, please add an appropriate license file.
