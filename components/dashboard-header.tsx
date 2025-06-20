@@ -106,7 +106,7 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
             {/* Date/time display can be added here */}
           </div>
         )}
-        <h1 className="text-black ml-4">App Admin Panel</h1>
+        <h1 className="text-black ml-4 font-bold">App Admin Panel</h1>
         {/* Right-aligned items container */}
         <div className="flex items-center gap-3 ml-auto">
           {/* Notifications */}

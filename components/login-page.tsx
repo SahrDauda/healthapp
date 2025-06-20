@@ -8,11 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getAuth, signInWithEmailAndPassword, User } from "firebase/auth"
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth"
 import { app } from "../lib/firebase"
 
 interface LoginPageProps {
-  onLogin: (credentials: { email: string; password: string; rememberMe: boolean }) => void
+  onLoginSuccess: () => void
 }
 
 interface FormErrors {
@@ -21,7 +21,7 @@ interface FormErrors {
   general?: string
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -59,14 +59,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setIsLoading(true)
     setErrors({})
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password)
-      const user = {
-        email: userCredential.user.email || "",
-        password: formData.password,
-        rememberMe: formData.rememberMe
-      }
-      onLogin(user)
-    } catch {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password)
+      onLoginSuccess()
+    } catch (error) {
       setErrors({ general: "Invalid email or password. Please try again." })
     } finally {
       setIsLoading(false)

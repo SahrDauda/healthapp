@@ -151,11 +151,11 @@ export function DashboardOverview() {
             <Baby className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">4</div>
+            <div className="text-xl sm:text-2xl font-bold">0</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-black flex items-center">
                 <TrendingUp className="h-3 w-3 mr-1" />
-                +1 from last month
+                0 from last month
               </span>
             </p>
           </CardContent>

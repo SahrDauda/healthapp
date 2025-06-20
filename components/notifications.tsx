@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bell, Send, Calendar, Clock, Plus, Settings, MessageSquare, Search } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,37 +14,23 @@ import { Switch } from "@/components/ui/switch"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { db } from "../lib/firebase"
+import { addDoc, collection, serverTimestamp, Timestamp, getDocs, query, orderBy } from "firebase/firestore"
 
-// Sample data for notifications
-const recentNotifications = [
-  {
-    id: "1",
-    type: "appointment_reminder",
-    recipient: "Emma Thompson",
-    message: "Reminder: You have a prenatal check-up tomorrow at 10:00 AM",
-    status: "sent",
-    sentAt: "2024-01-25 09:00 AM",
-    scheduledFor: "2024-01-26 10:00 AM",
-  },
-  {
-    id: "2",
-    type: "broadcast",
-    recipient: "All High Risk Patients",
-    message: "Important: Please ensure you're taking your prescribed medications daily",
-    status: "delivered",
-    sentAt: "2024-01-24 02:00 PM",
-    scheduledFor: "2024-01-24 02:00 PM",
-  },
-  {
-    id: "3",
-    type: "appointment_reminder",
-    recipient: "Maria Rodriguez",
-    message: "Reminder: You have an ultrasound appointment in 2 days",
-    status: "pending",
-    sentAt: null,
-    scheduledFor: "2024-01-27 11:00 AM",
-  },
-]
+interface Notification {
+  id: string;
+  title: string;
+  message: string;
+  targetCategories: string[];
+  type: 'broadcast' | 'appointment_reminder';
+  status: 'sent' | 'pending' | 'delivered' | 'failed';
+  createdAt: Timestamp;
+  scheduledAt: Timestamp | null;
+  recipient?: string; 
+}
+
+// Sample data for notifications (will be replaced by Firestore data)
+const recentNotifications: Notification[] = []
 
 const broadcastTemplates = [
   {
@@ -72,18 +58,49 @@ const patientCategories = [
   { id: "first_trimester", name: "First Trimester", count: 8 },
   { id: "second_trimester", name: "Second Trimester", count: 12 },
   { id: "third_trimester", name: "Third Trimester", count: 6 },
-  { id: "postpartum", name: "Postpartum", count: 4 },
   { id: "high_risk", name: "High Risk", count: 5 },
-  { id: "due_soon", name: "Due Within 30 Days", count: 3 },
 ]
 
 export function Notifications() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview")
   const [isCreateBroadcastOpen, setIsCreateBroadcastOpen] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const isMobile = useIsMobile()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
+        const querySnapshot = await getDocs(q);
+        const fetchedNotifications = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Notification));
+        setNotifications(fetchedNotifications);
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+        setError("Failed to fetch notifications. Please try refreshing the page.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchNotifications();
+  }, []);
+
+  const notificationStats = {
+    total: notifications.length,
+    sent: notifications.filter(n => n.status === 'sent').length,
+    pending: notifications.filter(n => n.status === 'pending').length,
+    delivered: notifications.filter(n => n.status === 'delivered').length,
+  };
 
   // Broadcast message form state
   const [broadcastForm, setBroadcastForm] = useState({
@@ -126,25 +143,65 @@ export function Notifications() {
     }
   }
 
-  const handleSendBroadcast = () => {
-    // Implementation for sending broadcast
-    console.log("Sending broadcast:", broadcastForm)
-    setIsCreateBroadcastOpen(false)
-    setBroadcastForm({
-      title: "",
-      message: "",
-      categories: [],
-      scheduleType: "now",
-      scheduleDate: "",
-      scheduleTime: "",
-      template: "",
-    })
-  }
+  const handleSendBroadcast = async () => {
+    if (!broadcastForm.message || broadcastForm.categories.length === 0) {
+      alert("Please provide a message and select at least one category.");
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
+    try {
+      const newBroadcast: {
+        title: string;
+        message: string;
+        targetCategories: string[];
+        type: string;
+        status: string;
+        createdAt: any; // Using any for serverTimestamp
+        scheduledAt: Timestamp | null;
+      } = {
+        title: broadcastForm.title,
+        message: broadcastForm.message,
+        targetCategories: broadcastForm.categories,
+        type: 'broadcast',
+        status: broadcastForm.scheduleType === 'later' ? 'pending' : 'sent',
+        createdAt: serverTimestamp(),
+        scheduledAt: null,
+      };
 
-  const filteredNotifications = recentNotifications.filter((notification) => {
+      if (broadcastForm.scheduleType === 'later' && broadcastForm.scheduleDate && broadcastForm.scheduleTime) {
+        const scheduleDateTime = new Date(`${broadcastForm.scheduleDate}T${broadcastForm.scheduleTime}`);
+        newBroadcast.scheduledAt = Timestamp.fromDate(scheduleDateTime);
+      }
+      
+      await addDoc(collection(db, "notifications"), newBroadcast);
+      
+      console.log("Broadcast successfully created!");
+      setIsCreateBroadcastOpen(false);
+      setBroadcastForm({
+        title: "",
+        message: "",
+        categories: [] as string[],
+        scheduleType: "now",
+        scheduleDate: "",
+        scheduleTime: "",
+        template: "",
+      });
+    } catch (error) {
+      console.error("Error creating broadcast:", error);
+      alert("Failed to create broadcast. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const filteredNotifications = notifications.filter((notification) => {
+    const recipientName = notification.targetCategories.join(', ') || 'N/A';
     const matchesSearch =
-      notification.recipient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      notification.message.toLowerCase().includes(searchTerm.toLowerCase())
+      recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      notification.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      notification.title.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === "all" || notification.status === filterStatus
     return matchesSearch && matchesFilter
   })
@@ -174,6 +231,68 @@ export function Notifications() {
         return <Bell className="h-4 w-4" />
     }
   }
+
+  const renderNotificationList = () => {
+    if (loading) {
+      return (
+        <div className="text-center p-8">
+          <p>Loading notifications...</p>
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className="text-center p-8 text-red-600">
+          <p>{error}</p>
+        </div>
+      );
+    }
+
+    if (filteredNotifications.length === 0) {
+      return (
+        <div className="text-center p-8 border-2 border-dashed rounded-lg mt-4">
+          <MessageSquare className="mx-auto h-12 w-12 text-gray-400" />
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No Notifications Found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            {searchTerm || filterStatus !== 'all'
+              ? "Try adjusting your search or filter."
+              : "Create a new broadcast message to get started."}
+          </p>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="space-y-4">
+        {filteredNotifications.map((notification) => (
+          <Card key={notification.id} className="transition-all hover:shadow-md">
+            <CardContent className="p-4 flex items-start gap-4">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
+                {getTypeIcon(notification.type)}
+              </div>
+              <div className="flex-grow">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold">{notification.title || "Broadcast Message"}</p>
+                  <Badge variant={getStatusColor(notification.status) as any}>{notification.status}</Badge>
+                </div>
+                <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                <div className="text-xs text-gray-400 mt-2 flex items-center gap-4">
+                  <span>To: {notification.targetCategories.join(", ")}</span>
+                  <span>|</span>
+                  <span>
+                    {notification.createdAt
+                      ? new Date(notification.createdAt.seconds * 1000).toLocaleString()
+                      : "No date"}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -317,9 +436,13 @@ export function Notifications() {
                   >
                     Cancel
                   </Button>
-                  <Button onClick={handleSendBroadcast} className="w-full sm:w-auto">
-                    <Send className="h-4 w-4 mr-2" />
-                    {broadcastForm.scheduleType === "now" ? "Send Now" : "Schedule Message"}
+                  <Button onClick={handleSendBroadcast} className="w-full sm:w-auto" disabled={isSubmitting}>
+                    {isSubmitting ? "Submitting..." : (
+                      <>
+                        <Send className="h-4 w-4 mr-2" />
+                        {broadcastForm.scheduleType === "now" ? "Send Now" : "Schedule Message"}
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
@@ -419,6 +542,46 @@ export function Notifications() {
         </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="bg-blue-100 border-blue-200 text-blue-900 transition-all hover:bg-blue-200/60">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-blue-800">Total Messages</CardTitle>
+            <MessageSquare className="h-4 w-4 text-blue-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "..." : notificationStats.total}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-100 border-green-200 text-green-900 transition-all hover:bg-green-200/60">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-green-800">Sent</CardTitle>
+            <Send className="h-4 w-4 text-green-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "..." : notificationStats.sent}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-amber-100 border-amber-200 text-amber-900 transition-all hover:bg-amber-200/60">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-amber-800">Pending</CardTitle>
+            <Clock className="h-4 w-4 text-amber-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "..." : notificationStats.pending}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-sky-100 border-sky-200 text-sky-900 transition-all hover:bg-sky-200/60">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium text-sky-800">Delivered</CardTitle>
+            <Bell className="h-4 w-4 text-sky-700" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{loading ? "..." : notificationStats.delivered}</div>
+          </CardContent>
+        </Card>
+      </div>
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -428,51 +591,6 @@ export function Notifications() {
 
         <TabsContent value="overview" className="space-y-4 sm:space-y-6">
           {/* Statistics Cards */}
-          <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">Total Sent</CardTitle>
-                <Send className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl sm:text-2xl font-bold">156</div>
-                <p className="text-xs text-muted-foreground">This month</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">Delivery Rate</CardTitle>
-                <Bell className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl sm:text-2xl font-bold">98.5%</div>
-                <p className="text-xs text-muted-foreground">Success rate</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">Scheduled</CardTitle>
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl sm:text-2xl font-bold">12</div>
-                <p className="text-xs text-muted-foreground">Pending delivery</p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs sm:text-sm font-medium">Active Reminders</CardTitle>
-                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-xl sm:text-2xl font-bold">24</div>
-                <p className="text-xs text-muted-foreground">Auto-scheduled</p>
-              </CardContent>
-            </Card>
-          </div>
 
           {/* Recent Activity */}
           <Card>
@@ -482,13 +600,13 @@ export function Notifications() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {recentNotifications.slice(0, 5).map((notification) => (
+                {notifications.slice(0, 3).map((notification) => (
                   <div key={notification.id} className="flex items-start space-x-3 p-3 border rounded-lg">
                     <div className="flex-shrink-0 mt-1">{getTypeIcon(notification.type)}</div>
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div>
-                          <p className="font-medium text-sm">{notification.recipient}</p>
+                          <p className="font-medium text-sm">{notification.title}</p>
                           <p className="text-sm text-muted-foreground line-clamp-2">{notification.message}</p>
                         </div>
                         <div className="flex flex-col sm:items-end gap-1">
@@ -496,7 +614,7 @@ export function Notifications() {
                             {notification.status}
                           </Badge>
                           <span className="text-xs text-muted-foreground">
-                            {notification.sentAt || `Scheduled for ${notification.scheduledFor}`}
+                            {notification.createdAt ? new Date(notification.createdAt.seconds * 1000).toLocaleString() : "No date"}
                           </span>
                         </div>
                       </div>
@@ -504,6 +622,42 @@ export function Notifications() {
                   </div>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Most Recent Notification */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base sm:text-lg">Most Recent Notification</CardTitle>
+              <CardDescription className="text-sm">Details of the latest notification</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {notifications.length > 0 ? (
+                <div className="flex items-start space-x-3 p-3 border rounded-lg">
+                  <div className="flex-shrink-0 mt-1">{getTypeIcon(notifications[0].type)}</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <p className="font-medium text-sm">{notifications[0].title}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{notifications[0].message}</p>
+                      </div>
+                      <div className="flex flex-col sm:items-end gap-1">
+                        <Badge variant={getStatusColor(notifications[0].status) as any} className="w-fit">
+                          {notifications[0].status}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {notifications[0].createdAt ? new Date(notifications[0].createdAt.seconds * 1000).toLocaleString() : "No date"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-400 mt-2 flex items-center gap-4">
+                      <span>To: {notifications[0].targetCategories.join(", ")}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-4">No notifications found.</div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -525,10 +679,10 @@ export function Notifications() {
                 <SelectValue placeholder="Filter by status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All Statuses</SelectItem>
                 <SelectItem value="sent">Sent</SelectItem>
-                <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
                 <SelectItem value="failed">Failed</SelectItem>
               </SelectContent>
             </Select>
@@ -543,34 +697,7 @@ export function Notifications() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {filteredNotifications.map((notification) => (
-                  <div key={notification.id} className="flex items-start space-x-3 p-4 border rounded-lg">
-                    <div className="flex-shrink-0 mt-1">{getTypeIcon(notification.type)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <p className="font-medium text-sm">{notification.recipient}</p>
-                            <Badge variant="outline" className="text-xs">
-                              {notification.type.replace("_", " ")}
-                            </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">{notification.message}</p>
-                          <div className="text-xs text-muted-foreground">
-                            {notification.sentAt
-                              ? `Sent: ${notification.sentAt}`
-                              : `Scheduled: ${notification.scheduledFor}`}
-                          </div>
-                        </div>
-                        <Badge variant={getStatusColor(notification.status) as any} className="w-fit">
-                          {notification.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              {renderNotificationList()}
             </CardContent>
           </Card>
         </TabsContent>

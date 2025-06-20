@@ -1,196 +1,226 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
-import { ArrowLeft, Phone, Mail } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
+import { useState, useEffect } from "react"
+import { ArrowLeft, Phone, Mail, Calendar, Pill, FileText, Heart } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Separator } from "@/components/ui/separator"
+import { doc, getDoc } from "firebase/firestore"
+import { db } from "../lib/firebase"
 
 interface PatientDetailProps {
-  patientId: string;
-  onBack: () => void;
+  patientId: string
+  onBack: () => void
+}
+
+// Move these to the top, before PatientDetail is defined
+const contactTrimesterMap: Record<number, string> = {
+  1: "1st trimester",
+  2: "2nd trimester",
+  3: "2nd trimester",
+  4: "2nd trimester",
+  5: "3rd trimester",
+  6: "3rd trimester",
+  7: "3rd trimester",
+  8: "3rd trimester",
+};
+
+function getTrimesterForContact(contactNum: number) {
+  return contactTrimesterMap[contactNum] || "-";
 }
 
 export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
-  const [patient, setPatient] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Demo data for tabs (replace with real data as needed)
-  const medicalHistory = [
-    "No chronic conditions",
-    "Previous pregnancy: 2021 (Normal delivery)",
-    "No known allergies",
-  ];
-  const medications = [
-    "Prenatal vitamins",
-    "Folic acid 400mcg",
-    "Iron supplement 65mg",
-  ];
-  const labResults = [
-    { label: "Hemoglobin", value: "12.5 g/dL" },
-    { label: "Glucose", value: "95 mg/dL" },
-    { label: "Protein", value: "Negative" },
-  ];
-  const appointments = [
-    { date: "2024-02-01", type: "Prenatal Check-up" },
-    { date: "2024-03-01", type: "Ultrasound" },
-  ];
+  const [patient, setPatient] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchPatient() {
-      setLoading(true);
-      setError(null);
+      setLoading(true)
+      setError(null)
       try {
-        const docRef = doc(db, "ancRecords", patientId);
-        const docSnap = await getDoc(docRef);
+        const docRef = doc(db, "ancRecords", patientId)
+        const docSnap = await getDoc(docRef)
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          const basicInfo = data.basicInfo || data.visit1?.basicInfo || null;
-          const presentPregnancy = data.visit1?.presentPregnancy || {};
-          const vitals = data.visit1?.vitals || {};
-          setPatient({ ...basicInfo, ...presentPregnancy, ...vitals });
+          const data = docSnap.data()
+          setPatient(data)
         } else {
-          setError("No such patient document.");
+          setError("No such patient document.")
         }
       } catch (err) {
-        setError("Failed to fetch patient data.");
+        setError("Failed to fetch patient data.")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
     }
-    fetchPatient();
-  }, [patientId]);
+    fetchPatient()
+  }, [patientId])
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading patient data...</div>;
+    return <div>Loading patient data...</div>
   }
   if (error) {
-    return <div className="flex justify-center items-center h-64 text-red-600">Error: {error}</div>;
+    return <div>Error: {error}</div>
   }
   if (!patient) {
-    return <div className="flex justify-center items-center h-64">Patient not found</div>;
+    return <div>Patient not found</div>
   }
 
+  // Extract and normalize patient fields for display
+  const visit1 = patient.visit1 || {}
+  const basicInfo = visit1.basicInfo || {}
+  const presentPregnancy = visit1.presentPregnancy || {}
+  const vitals = visit1.vitals || {}
+  const name = basicInfo.clientName || basicInfo.name || "-"
+  const age = basicInfo.age || "-"
+  const phone = basicInfo.phoneNumber || basicInfo.phone || "-"
+  const email = basicInfo.email || "-"
+  const address = basicInfo.address || "-"
+  const emergencyContact = basicInfo.emergencyContact || "-"
+  const pregnancyWeeks = presentPregnancy.gestationalAge || "-"
+  const contactNum = presentPregnancy.contactNum || 1
+  const calculatedTrimester = getTrimesterForContact(Number(contactNum))
+  const trimester = calculatedTrimester || "-"
+  const dueDate = presentPregnancy.dueDate ? new Date(presentPregnancy.dueDate).toLocaleDateString() : "-"
+  const status = basicInfo.status || "Active"
+  const riskLevel = basicInfo.riskLevel || "Low"
+  const bloodType = basicInfo.bloodType || "-"
+  const height = vitals.height || "-"
+  const currentWeight = vitals.weight || "-"
+  const medicalHistory = basicInfo.medicalHistory || []
+  const currentMedications = basicInfo.currentMedications || []
+  const labResults = basicInfo.labResults || []
+  const appointments = basicInfo.appointments || []
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-blue-50 p-0 sm:p-6">
-      <div className="max-w-7xl mx-auto pt-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Button variant="ghost" size="icon" onClick={onBack} className="mr-2">
-            <ArrowLeft className="h-5 w-5" />
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" onClick={onBack}>
+          <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-3xl font-bold leading-tight">{patient.clientName || patient.name}</h1>
-            <div className="text-muted-foreground text-lg">Patient Medical Record</div>
-          </div>
+          <h1 className="text-3xl font-bold">{name}</h1>
+          <p className="text-muted-foreground">Patient Medical Record</p>
         </div>
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left Card */}
-          <Card className="w-full max-w-md mx-auto lg:mx-0">
-            <CardContent className="p-6">
-              <div className="flex flex-col items-center gap-2 mb-4">
-                <Avatar className="h-20 w-20 mb-2">
-                  <AvatarImage src="/placeholder-user.jpg" alt={patient.clientName || patient.name} />
-                  <AvatarFallback>
-                    {(patient.clientName || patient.name || "?")
-                      .split(" ")
-                      .map((n: string) => n[0])
-                      .join("")}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-1">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={`/placeholder.svg?height=64&width=64`} />
+                  <AvatarFallback className="text-lg">
+                    {name.split(" ").map((n: string) => n[0]).join("")}
                   </AvatarFallback>
                 </Avatar>
-                <div className="text-xl font-semibold text-center">{patient.clientName || patient.name}</div>
-                <div className="text-gray-600 text-center">Age: {patient.age || "-"}</div>
+                <div>
+                  <CardTitle className="text-xl">{name}</CardTitle>
+                  <p className="text-muted-foreground">Age: {age}</p>
                 <div className="flex gap-2 mt-2">
-                  {patient.status && <Badge variant="default">{patient.status}</Badge>}
-                  {patient.riskLevel && <Badge variant="secondary">{patient.riskLevel} Risk</Badge>}
+                    <Badge variant="default">{status}</Badge>
+                    <Badge variant="outline">{riskLevel} Risk</Badge>
+                  </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2 mb-4">
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Phone className="h-4 w-4" />
-                  <span>{patient.phoneNumber || patient.phone || <span className="text-muted-foreground">N/A</span>}</span>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{phone}</span>
                 </div>
-                <div className="flex items-center gap-2 text-gray-700">
-                  <Mail className="h-4 w-4" />
-                  <span>{patient.email || <span className="text-muted-foreground">N/A</span>}</span>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{email}</span>
                 </div>
               </div>
-              <Separator className="my-4" />
-              <div className="mb-4">
-                <div className="font-semibold mb-1">Pregnancy Status</div>
-                <div>Weeks: <span className="font-medium">{patient.gestationalAge || patient.pregnancyWeeks || "-"}</span></div>
-                <div>Trimester: <span className="font-medium">{patient.trimester || "-"}</span></div>
-                <div>Due Date: <span className="font-medium">{patient.dueDate ? new Date(patient.dueDate).toLocaleDateString() : "-"}</span></div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Pregnancy Status</h4>
+                <div className="text-sm space-y-1">
+                  <p>
+                    <span className="font-medium">Weeks:</span> {pregnancyWeeks}
+                  </p>
+                  <p>
+                    <span className="font-medium">Trimester:</span> {calculatedTrimester}
+                  </p>
+                  <p>
+                    <span className="font-medium">Due Date:</span> {dueDate}
+                  </p>
+                </div>
               </div>
-              <Separator className="my-4" />
-              <div>
-                <div className="font-semibold mb-1">Vital Information</div>
-                <div>Blood Type: <span className="font-medium">{patient.bloodGroup || patient.bloodType || "-"}</span></div>
-                <div>Height: <span className="font-medium">{patient.height || "-"}</span></div>
-                <div>Current Weight: <span className="font-medium">{patient.currentWeight || patient.weight || "-"}</span></div>
+
+              <Separator />
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Vital Information</h4>
+                <div className="text-sm space-y-1">
+                  <p>
+                    <span className="font-medium">Blood Type:</span> {bloodType}
+                  </p>
+                  <p>
+                    <span className="font-medium">Height:</span> {height}
+                  </p>
+                  <p>
+                    <span className="font-medium">Current Weight:</span> {currentWeight}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
-          {/* Right Tabs */}
-          <div className="flex-1">
-            <Tabs defaultValue="history" className="w-full">
-              <TabsList className="w-full grid grid-cols-4 mb-4">
-                <TabsTrigger value="history">Medical History</TabsTrigger>
+        </div>
+
+        <div className="lg:col-span-2">
+          <Tabs defaultValue="medical" className="space-y-4">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="medical">Medical History</TabsTrigger>
                 <TabsTrigger value="medications">Medications</TabsTrigger>
-                <TabsTrigger value="labs">Lab Results</TabsTrigger>
-                <TabsTrigger value="appointments">Appointments</TabsTrigger>
               </TabsList>
-              <TabsContent value="history">
+
+            <TabsContent value="medical" className="space-y-4">
                 <Card>
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="font-bold text-xl">🗎 Medical History</span>
-                    </div>
-                    <ul className="list-disc pl-6 space-y-1">
-                      {medicalHistory.map((item, idx) => (
-                        <li key={idx} className="text-base text-gray-800">{item}</li>
-                      ))}
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Medical History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-2">
+                    {medicalHistory.length > 0 ? medicalHistory.map((item: string, index: number) => (
+                      <li key={index} className="flex items-start gap-2">
+                        <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    )) : <li>No medical history available.</li>}
                     </ul>
                   </CardContent>
                 </Card>
               </TabsContent>
-              <TabsContent value="medications">
+
+            <TabsContent value="medications" className="space-y-4">
                 <Card>
-                  <CardContent className="p-6">
-                    <div className="font-bold text-xl mb-2">💊 Medications</div>
-                    <ul className="list-disc pl-6 space-y-1">
-                      {medications.map((item, idx) => (
-                        <li key={idx} className="text-base text-gray-800">{item}</li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="labs">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="font-bold text-xl mb-2">🧪 Lab Results</div>
-                    <ul className="list-disc pl-6 space-y-1">
-                      {labResults.map((item, idx) => (
-                        <li key={idx} className="text-base text-gray-800">{item.label}: {item.value}</li>
-                      ))}
-                    </ul>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              <TabsContent value="appointments">
-                <Card>
-                  <CardContent className="p-6">
-                    <div className="font-bold text-xl mb-2">📅 Appointments</div>
-                    <ul className="list-disc pl-6 space-y-1">
-                      {appointments.map((item, idx) => (
-                        <li key={idx} className="text-base text-gray-800">{item.date}: {item.type}</li>
-                      ))}
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Pill className="h-5 w-5" />
+                    Current Medications
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ul className="space-y-3">
+                    {currentMedications.length > 0 ? currentMedications.map((medication: string, index: number) => (
+                      <li key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <span>{medication}</span>
+                        <Badge variant="outline">Active</Badge>
+                      </li>
+                    )) : <li>No medications listed.</li>}
                     </ul>
                   </CardContent>
                 </Card>
@@ -199,7 +229,5 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
           </div>
         </div>
       </div>
-    </div>
-  );
+  )
 }
-

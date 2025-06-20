@@ -30,9 +30,11 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { collection, getDocs } from "firebase/firestore"
 import { db } from "../lib/firebase"
 import { useRouter } from "next/navigation"
+import { PatientDetail } from "@/components/patient-detail"
 
 interface PatientProfilesProps {
   onSelectPatient: (patientId: string) => void
+  setFilteredPatientCount?: (count: number) => void
 }
 
 interface FilterState {
@@ -45,7 +47,50 @@ interface FilterState {
   dueWithinDays: number | null
 }
 
-export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
+// 1. Gestational age schedule for 8 contacts
+const contactSchedule = [
+  { contact: 1, ga: 12, label: "≤ 12 weeks" },
+  { contact: 2, ga: 16, label: "13–16 weeks" },
+  { contact: 3, ga: 20, label: "20 weeks" },
+  { contact: 4, ga: 26, label: "26 weeks" },
+  { contact: 5, ga: 30, label: "30 weeks" },
+  { contact: 6, ga: 34, label: "34 weeks" },
+  { contact: 7, ga: 36, label: "36 weeks" },
+  { contact: 8, ga: 38, label: "38–40 weeks" },
+]
+
+// Helper to get latest visit info (GA and date)
+function getLatestVisitInfo(data: any) {
+  let latestVisitNum = 0;
+  let latestDate = null;
+  let latestGA = null;
+  for (let i = 1; i <= 8; i++) {
+    const visit = data[`visit${i}`];
+    if (visit && visit.presentPregnancy && visit.presentPregnancy.dateOfANCContact) {
+      const visitDate = visit.presentPregnancy.dateOfANCContact.toDate ? visit.presentPregnancy.dateOfANCContact.toDate() : new Date(visit.presentPregnancy.dateOfANCContact);
+      if (!latestDate || visitDate > latestDate) {
+        latestDate = visitDate;
+        latestGA = Number(visit.presentPregnancy.gestationalAge);
+        latestVisitNum = i;
+      }
+    }
+  }
+  return { latestVisitNum, latestDate, latestGA };
+}
+
+// Refined next appointment calculation
+function calculateNextAppointmentFromData(data: any) {
+  const { latestVisitNum, latestDate, latestGA } = getLatestVisitInfo(data);
+  if (!latestVisitNum || !latestDate || latestGA == null) return null;
+  if (latestVisitNum >= contactSchedule.length) return null;
+  const nextContact = contactSchedule[latestVisitNum]; // next contact is index = latestVisitNum
+  if (!nextContact) return null;
+  const weeksToAdd = nextContact.ga - latestGA;
+  const nextDate = new Date(latestDate.getTime() + weeksToAdd * 7 * 24 * 60 * 60 * 1000);
+  return { date: nextDate, label: nextContact.label, contact: nextContact.contact };
+}
+
+export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: PatientProfilesProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedPatient, setSelectedPatient] = useState<(typeof patients)[0] | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -107,28 +152,40 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
           const visit1 = data.visit1 || {}
           const basicInfo = visit1.basicInfo || {}
           const presentPregnancy = visit1.presentPregnancy || {}
+          // Get latest visit info
+          const { latestVisitNum, latestDate, latestGA } = getLatestVisitInfo(data);
+          const next = calculateNextAppointmentFromData(data);
           fetchedPatients.push({
             id: docSnap.id,
             clientName: basicInfo.clientName || "",
             age: basicInfo.age || "",
             phoneNumber: basicInfo.phoneNumber || "",
             email: basicInfo.email || "",
-            pregnancyWeeks: presentPregnancy.gestationalAge || "",
+            pregnancyWeeks: latestGA || "",
             trimester: presentPregnancy.trimester || "",
             dueDate: presentPregnancy.dueDate || "",
             status: basicInfo.status || "Active",
-            lastVisit: lastVisitDate ? lastVisitDate.toISOString().split("T")[0] : "",
-            nextAppointment: "", // You can update this if you have a field for next appointment
+            lastVisit: latestDate ? latestDate.toISOString().split("T")[0] : "",
+            nextAppointment: next ? next.date.toISOString().split("T")[0] : "",
+            nextAppointmentLabel: next ? `${next.label} (Contact ${next.contact})` : "All contacts complete",
             riskLevel: basicInfo.riskLevel || "",
             bloodType: basicInfo.bloodType || "",
-            visitCount: visitCount,
-            totalAppointments: presentPregnancy.totalAppointments || "",
+            visitCount: latestVisitNum,
+            totalAppointments: 8,
             address: basicInfo.address || "",
             emergencyContact: basicInfo.emergencyContact || "",
             emergencyPhone: basicInfo.emergencyPhone || "",
           })
         })
-        setPatients(fetchedPatients)
+        const patientsWithNext = fetchedPatients.map((p) => {
+          const next = calculateNextAppointmentFromData(p);
+          return {
+            ...p,
+            nextAppointment: next ? next.date.toISOString().split("T")[0] : "",
+            nextAppointmentLabel: next ? `${next.label} (Contact ${next.contact})` : "All contacts complete",
+          };
+        });
+        setPatients(patientsWithNext)
       } finally {
         setLoading(false)
       }
@@ -284,11 +341,13 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
   const getRiskColor = (risk: string) => {
     switch (risk) {
       case "High":
-        return "destructive"
+        return "destructive";
       case "Medium":
-        return "secondary"
+        return "warning";
+      case "Low":
+      case "":
       default:
-        return "outline"
+        return "success";
     }
   }
 
@@ -310,8 +369,8 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
 
   const handleViewMore = () => {
     if (selectedPatient) {
-      setIsModalOpen(false)
-      router.push(`/patients/${selectedPatient.id}`)
+      setIsModalOpen(false);
+      onSelectPatient(selectedPatient.id);
     }
   }
 
@@ -388,6 +447,12 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
     </Card>
   )
 
+  useEffect(() => {
+    if (setFilteredPatientCount) {
+      setFilteredPatientCount(filteredPatients.length)
+    }
+  }, [filteredPatients, setFilteredPatientCount])
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -397,19 +462,19 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
             Manage maternal health records and patient information
           </p>
         </div>
-        <Button className="w-full sm:w-auto">Add New Patient</Button>
+        {/* <Button className="w-full sm:w-auto">Add New Patient</Button> */}
       </div>
 
       {/* Statistics Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         <Card className="bg-gradient-to-br from-green-600 to-green-700 text-white">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Filtered Results</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Active Users</CardTitle>
             <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
             <div className="text-xl sm:text-2xl font-bold">{filteredPatients.length}</div>
-            <p className="text-xs text-muted-foreground-black">of {totalPatients} total patients</p>
+            <p className="text-xs text-muted-foreground-black">of total Users</p>
           </CardContent>
         </Card>
 
@@ -647,7 +712,7 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={getRiskColor(patient.riskLevel) as any}>{patient.riskLevel}</Badge>
+                        <Badge variant={getRiskColor(patient.riskLevel) as any}>{patient.riskLevel || 'No Risk'}</Badge>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
@@ -655,13 +720,15 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
                             {patient.visitCount}/{patient.totalAppointments}
                           </div>
                           <div className="text-muted-foreground">
-                            {Math.round((patient.visitCount / patient.totalAppointments) * 100)}% complete
+                            {Math.round((patient.visitCount / 8) * 100)}% complete
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm">{new Date(patient.lastVisit).toLocaleDateString()}</TableCell>
                       <TableCell className="text-sm">
-                        {new Date(patient.nextAppointment).toLocaleDateString()}
+                        {patient.nextAppointment
+                          ? `${new Date(patient.nextAppointment).toLocaleDateString()} (${patient.nextAppointmentLabel})`
+                          : "All contacts complete"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -885,6 +952,20 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
           </DialogHeader>
 
           {selectedPatient && (
+            <div className="mb-4 p-4 bg-muted rounded-lg grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><span className="font-medium">Name:</span> {selectedPatient.clientName || selectedPatient.name}</div>
+              <div><span className="font-medium">Age:</span> {selectedPatient.age}</div>
+              <div><span className="font-medium">Phone:</span> {selectedPatient.phoneNumber || selectedPatient.phone}</div>
+              <div><span className="font-medium">Email:</span> {selectedPatient.email}</div>
+              <div><span className="font-medium">Risk Level:</span> <Badge variant={getRiskColor(selectedPatient.riskLevel) as any}>{selectedPatient.riskLevel || 'No Risk'}</Badge></div>
+              <div><span className="font-medium">Status:</span> <Badge variant={getStatusColor(selectedPatient.status) as any}>{selectedPatient.status}</Badge></div>
+              <div><span className="font-medium">Gestational Age:</span> {selectedPatient.pregnancyWeeks} weeks</div>
+              <div><span className="font-medium">Last Visit:</span> {selectedPatient.lastVisit ? new Date(selectedPatient.lastVisit).toLocaleDateString() : 'N/A'}</div>
+              <div><span className="font-medium">Next Appointment:</span> {selectedPatient.nextAppointment ? `${new Date(selectedPatient.nextAppointment).toLocaleDateString()} (${selectedPatient.nextAppointmentLabel})` : 'All contacts complete'}</div>
+            </div>
+          )}
+
+          {selectedPatient && (
             <div className="space-y-6">
               {/* Basic Information */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -996,7 +1077,9 @@ export function PatientProfiles({ onSelectPatient }: PatientProfilesProps) {
                   <div>
                     <p>
                       <span className="font-medium">Next Appointment:</span>{" "}
-                      {new Date(selectedPatient.nextAppointment).toLocaleDateString()}
+                      {selectedPatient.nextAppointment
+                        ? `${new Date(selectedPatient.nextAppointment).toLocaleDateString()} (${selectedPatient.nextAppointmentLabel})`
+                        : "All contacts complete"}
                     </p>
                   </div>
                 </div>
