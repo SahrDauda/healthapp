@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Users, Clock, FileText, Settings, Bell, Heart, BarChart3, TrendingUp, AlertTriangle, Home, Activity } from "lucide-react"
+import { BookOpen, Users, Clock, FileText, Settings, Bell, Heart, BarChart3, TrendingUp, AlertTriangle, Home, Activity } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -82,9 +82,9 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
       hoverColor: "hover:bg-purple-50",
     },
     {
-      title: "Calendar",
-      icon: Calendar,
-      id: "calendar",
+      title: "Health Education",
+      icon: BookOpen,
+      id: "health-education",
       color: "bg-indigo-500",
       activeColor: "bg-indigo-600",
       textColor: "text-indigo-700",

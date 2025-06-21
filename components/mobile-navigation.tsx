@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Users, Clock, FileText, Bell, Heart, BarChart3, TrendingUp, X, Settings } from "lucide-react"
+import { BookOpen, Users, Clock, FileText, Bell, Heart, BarChart3, TrendingUp, X, Settings } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -29,15 +29,15 @@ const menuItems = [
   },
   {
     title: "Trimester Views",
-    icon: Calendar,
+    icon: Heart,
     id: "trimester-views",
     description: "Specialized trimester dashboards",
   },
   {
-    title: "Calendar",
-    icon: Calendar,
-    id: "calendar",
-    description: "Appointment scheduling",
+    title: "Health Education",
+    icon: BookOpen,
+    id: "health-education",
+    description: "Health tips and nutrition guidance",
   },
   {
     title: "Appointment Requests",

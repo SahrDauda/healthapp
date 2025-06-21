@@ -11,6 +11,7 @@ import { AppointmentAnalytics } from "../components/appointment-analytics"
 import { Notifications } from "../components/notifications"
 import { MedicalRecords } from "../components/medical-records"
 import { TrimesterDashboards } from "../components/trimester-dashboards"
+import { HealthEducation } from "../components/health-education"
 import SharedLayout from "../components/shared-layout"
 
 export default function Dashboard() {
@@ -42,8 +43,8 @@ export default function Dashboard() {
         return <PatientProfiles onSelectPatient={setSelectedPatient} setFilteredPatientCount={setFilteredPatientCount} />
       case "trimester-views":
         return <TrimesterDashboards onSelectPatient={setSelectedPatient} />
-      case "calendar":
-        return <AppointmentCalendar />
+      case "health-education":
+        return <HealthEducation />
       case "requests":
         return <AppointmentRequests />
       case "analytics":

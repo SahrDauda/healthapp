@@ -164,11 +164,11 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="icon" onClick={onBack}>
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" onClick={onBack}>
               <ArrowLeft className="h-5 w-5" />
-            </Button>
-            <div>
+          </Button>
+          <div>
               <h1 className="text-3xl font-bold text-gray-900">{name}</h1>
               <p className="text-gray-600">Patient Medical Record</p>
             </div>
@@ -188,43 +188,43 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
       <div className="p-6">
         <div className="grid gap-6 lg:grid-cols-4">
           {/* Left Sidebar - Patient Info */}
-          <div className="lg:col-span-1">
+        <div className="lg:col-span-1">
             <Card className="sticky top-6">
-              <CardHeader>
+            <CardHeader>
                 <div className="flex flex-col items-center space-y-4">
                   <Avatar className="h-24 w-24">
                     <AvatarImage src={`/placeholder.svg?height=96&width=96`} />
                     <AvatarFallback className="text-2xl">
                       {getInitials(name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  </AvatarFallback>
+                </Avatar>
                   <div className="text-center">
-                    <CardTitle className="text-xl">{name}</CardTitle>
+                  <CardTitle className="text-xl">{name}</CardTitle>
                     <p className="text-muted-foreground">Age: {age} years</p>
-                  </div>
                 </div>
-              </CardHeader>
+              </div>
+            </CardHeader>
               <CardContent className="space-y-6">
                 {/* Contact Information */}
                 <div className="space-y-3">
                   <h4 className="font-semibold text-sm text-gray-700">Contact Information</h4>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Phone className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{phone}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">{email}</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{phone}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">{email}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span className="text-sm">Emergency: {emergencyContact}</span>
                     </div>
-                  </div>
                 </div>
+              </div>
 
-                <Separator />
+              <Separator />
 
                 {/* Pregnancy Status */}
                 <div className="space-y-3">
@@ -263,26 +263,26 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                       <span className="text-muted-foreground">Weight:</span>
                       <span className="font-medium">{currentWeight}</span>
                     </div>
-                  </div>
                 </div>
+              </div>
 
-                <Separator />
+              <Separator />
 
                 {/* Address */}
                 <div className="space-y-3">
                   <h4 className="font-semibold text-sm text-gray-700">Address</h4>
                   <p className="text-sm text-muted-foreground">{address}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
           {/* Main Content Area */}
           <div className="lg:col-span-3">
             <Tabs defaultValue="overview" className="space-y-6">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="medical">Medical History</TabsTrigger>
+              <TabsTrigger value="medical">Medical History</TabsTrigger>
                 <TabsTrigger value="visits">Visit History</TabsTrigger>
               </TabsList>
 
@@ -436,18 +436,18 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
               {/* Medical History Tab */}
               <TabsContent value="medical" className="space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5" />
-                      Medical History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5" />
+                    Medical History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                     {medicalHistory.length > 0 ? (
                       <div className="grid gap-4">
                         {medicalHistory.map((item: string, index: number) => (
                           <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg">
-                            <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                        <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
                             <span className="text-sm">{item}</span>
                           </div>
                         ))}
@@ -465,11 +465,11 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
               {/* Visit History Tab */}
               <TabsContent value="visits" className="space-y-6">
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
                       <Calendar className="h-5 w-5" />
                       Visit History
-                    </CardTitle>
+                  </CardTitle>
                     <div className="flex items-center justify-between">
                       <p className="text-sm text-muted-foreground">
                         ANC Contact Schedule - {totalVisits}/8 visits completed
@@ -485,8 +485,8 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                         </div>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
+                </CardHeader>
+                <CardContent>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((visitNum) => {
                         const visit = patient[`visit${visitNum}`];
@@ -823,6 +823,6 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
           </div>
         </div>
       )}
-    </div>
+      </div>
   )
 }

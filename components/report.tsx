@@ -374,33 +374,33 @@ The HealthMama Support Team`;
     const lower = searchTerm.toLowerCase();
     if (searchTerm.trim()) {
       filtered = filtered.filter(r => {
-        const checkField = (key: keyof Report) => {
-          const value = r[key];
-          if (key === 'createdAt' && value instanceof Timestamp) {
-            return value.toDate().toLocaleString().toLowerCase().includes(lower);
-          }
-          if (typeof value === 'string') {
-            return value.toLowerCase().includes(lower);
-          }
-          return false;
-        };
+      const checkField = (key: keyof Report) => {
+        const value = r[key];
+        if (key === 'createdAt' && value instanceof Timestamp) {
+          return value.toDate().toLocaleString().toLowerCase().includes(lower);
+        }
+        if (typeof value === 'string') {
+          return value.toLowerCase().includes(lower);
+        }
+        return false;
+      };
 
-        if (searchField === "all") {
-          return (
-            checkField('clientName') ||
-            checkField('clientNumber') ||
-            checkField('facilityName') ||
-            checkField('reportType') ||
-            checkField('description') ||
+      if (searchField === "all") {
+        return (
+          checkField('clientName') ||
+          checkField('clientNumber') ||
+          checkField('facilityName') ||
+          checkField('reportType') ||
+          checkField('description') ||
             checkField('createdAt') ||
             (Array.isArray(r.fileUrls) && r.fileUrls.some(url => url.toLowerCase().includes(lower)))
-          );
+        );
         } else if (searchField === "fileUrls") {
           return Array.isArray(r.fileUrls) && r.fileUrls.some(url => url.toLowerCase().includes(lower));
-        } else {
-          return checkField(searchField as keyof Report);
-        }
-      });
+      } else {
+        return checkField(searchField as keyof Report);
+      }
+    });
     }
 
     // Apply sorting
@@ -616,25 +616,25 @@ The HealthMama Support Team`);
           <div className="flex flex-col lg:flex-row items-stretch lg:items-center space-y-3 lg:space-y-0 lg:space-x-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <Input
+          <Input
                 placeholder="Search reports by content, facility, or reporter..."
                 className="pl-10 h-12 border-gray-200 focus:border-maternal-green-500 focus:ring-maternal-green-500"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <Select value={searchField} onValueChange={setSearchField}>
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <Select value={searchField} onValueChange={setSearchField}>
               <SelectTrigger className="w-full lg:w-[200px] h-12 border-gray-200">
                 <SelectValue placeholder="Filter by field" />
-              </SelectTrigger>
-              <SelectContent>
-                {searchFields.map(field => (
-                  <SelectItem key={field.value} value={field.value}>
-                    {field.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          </SelectTrigger>
+          <SelectContent>
+            {searchFields.map(field => (
+              <SelectItem key={field.value} value={field.value}>
+                {field.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
             <Select value={readFilter} onValueChange={(value: "all" | "read" | "unread") => setReadFilter(value)}>
               <SelectTrigger className="w-full lg:w-[150px] h-12 border-gray-200">
                 <SelectValue placeholder="Status" />
@@ -652,9 +652,9 @@ The HealthMama Support Team`);
               <SelectContent>
                 <SelectItem value="date">Date (Newest)</SelectItem>
                 <SelectItem value="read">Read Status</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          </SelectContent>
+        </Select>
+      </div>
         </CardContent>
       </Card>
 
@@ -689,7 +689,7 @@ The HealthMama Support Team`);
                   const isExpanded = expandedRows.has(report.id);
                   return (
                     <React.Fragment key={report.id}>
-                      <TableRow 
+                  <TableRow
                         className="hover:bg-maternal-green-50/50 transition-colors border-b"
                       >
                         <TableCell className="py-4">
@@ -1018,7 +1018,7 @@ The HealthMama Support Team`);
                               )}
                             </div>
                           </TableCell>
-                        </TableRow>
+                  </TableRow>
                       )}
                     </React.Fragment>
                   );
