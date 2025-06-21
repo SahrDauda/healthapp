@@ -78,6 +78,18 @@ function getLatestVisitInfo(data: any) {
   return { latestVisitNum, latestDate, latestGA };
 }
 
+// Get initials from first and last name
+const getInitials = (fullName: string) => {
+  if (!fullName) return "?";
+  const nameParts = fullName.trim().split(' ');
+  if (nameParts.length >= 2) {
+    return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+  } else if (nameParts.length === 1) {
+    return nameParts[0][0].toUpperCase();
+  }
+  return "?";
+};
+
 // Refined next appointment calculation
 function calculateNextAppointmentFromData(data: any) {
   const { latestVisitNum, latestDate, latestGA } = getLatestVisitInfo(data);
@@ -390,10 +402,7 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
           <Avatar className="h-12 w-12">
             <AvatarImage src={`/placeholder.svg?height=48&width=48`} />
             <AvatarFallback>
-              {(patient.clientName || patient.name || "")
-                .split(" ")
-                .map((n: string) => n[0])
-                .join("")}
+              {getInitials(patient.clientName || patient.name || "")}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
@@ -564,7 +573,7 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
               </SelectContent>
             </Select>
 
-            <Button variant="outline" size="icon" onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}>
+            <Button variant="outline" size="icon" onClick={() => setSortOrder(sortOrder === "asc" ? "desc" : "asc")}> 
               <ChevronDown className={`h-4 w-4 transition-transform ${sortOrder === "desc" ? "rotate-180" : ""}`} />
             </Button>
           </div>
@@ -673,10 +682,7 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
                             <AvatarFallback className="text-xs">
-                              {(patient.clientName || patient.name || "")
-                                .split(" ")
-                                .map((n: string) => n[0])
-                                .join("")}
+                              {getInitials(patient.clientName || patient.name || "")}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -938,10 +944,7 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
               <Avatar className="h-10 w-10">
                 <AvatarImage src={`/placeholder.svg?height=40&width=40`} />
                 <AvatarFallback>
-                  {(selectedPatient?.name || "")
-                    .split(" ")
-                    .map((n: string) => n[0])
-                    .join("")}
+                  {getInitials(selectedPatient?.clientName || selectedPatient?.name || "")}
                 </AvatarFallback>
               </Avatar>
               <div>

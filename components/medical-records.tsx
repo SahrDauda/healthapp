@@ -262,7 +262,24 @@ export function MedicalRecords() {
   const [filterRisk, setFilterRisk] = useState("all")
   const [selectedPatient, setSelectedPatient] = useState<(typeof medicalRecordsData)[0] | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false)
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false)
+  const [sortBy, setSortBy] = useState("name")
+  const [sortOrder, setSortOrder] = useState("asc")
+  const [viewMode, setViewMode] = useState<"cards" | "table">("cards")
   const isMobile = useIsMobile()
+
+  // Get initials from first and last name
+  const getInitials = (fullName: string) => {
+    if (!fullName) return "?";
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    } else if (nameParts.length === 1) {
+      return nameParts[0][0].toUpperCase();
+    }
+    return "?";
+  };
 
   // Filter patients based on search and filters
   const filteredPatients = medicalRecordsData.filter((patient) => {
@@ -652,10 +669,7 @@ export function MedicalRecords() {
                             <Avatar className="h-12 w-12">
                               <AvatarImage src={`/placeholder.svg?height=48&width=48`} />
                               <AvatarFallback>
-                                {patient.name
-                                  .split(" ")
-                                  .map((n) => n[0])
-                                  .join("")}
+                                {getInitials(patient.name)}
                               </AvatarFallback>
                             </Avatar>
                             <div className="flex-1 min-w-0">
@@ -734,10 +748,7 @@ export function MedicalRecords() {
                                 <Avatar className="h-8 w-8">
                                   <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
                                   <AvatarFallback className="text-xs">
-                                    {patient.name
-                                      .split(" ")
-                                      .map((n) => n[0])
-                                      .join("")}
+                                    {getInitials(patient.name)}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div>
@@ -1010,10 +1021,7 @@ export function MedicalRecords() {
               <Avatar className="h-10 w-10">
                 <AvatarImage src={`/placeholder.svg?height=40&width=40`} />
                 <AvatarFallback>
-                  {selectedPatient?.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
+                  {getInitials(selectedPatient?.name)}
                 </AvatarFallback>
               </Avatar>
               <div>

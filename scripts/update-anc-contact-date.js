@@ -1,5 +1,8 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs, doc, updateDoc, deleteField } from "firebase/firestore";
+// Script to update dateOfANCContact to dateOfAncContact in ancRecords collection
+// Usage: node scripts/update-anc-contact-date.js
+
+const { initializeApp } = require("firebase/app");
+const { getFirestore, collection, getDocs, doc, updateDoc, deleteField } = require("firebase/firestore");
 
 const firebaseConfig = {
   apiKey: "AIzaSyBGiim3UDIQp7ACL_DFG82k1CnSNZuvoDg",
@@ -14,7 +17,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 // Function to update field names in a collection
-export async function updateFieldName(collectionName, oldFieldName, newFieldName) {
+async function updateFieldName(collectionName, oldFieldName, newFieldName) {
   try {
     console.log(`Starting field name update: ${oldFieldName} -> ${newFieldName}`);
     
@@ -50,7 +53,7 @@ export async function updateFieldName(collectionName, oldFieldName, newFieldName
           console.log(`Updated nested field in document: ${document.id}`);
         }
       } else {
-        // Handle top-level field updates (original logic)
+        // Handle top-level field updates
         if (docData.hasOwnProperty(oldFieldName)) {
           const docRef = doc(db, collectionName, document.id);
           
@@ -82,4 +85,31 @@ export async function updateFieldName(collectionName, oldFieldName, newFieldName
   }
 }
 
-export { app, db };
+async function updateAncContactDate() {
+  console.log('Starting ANC contact date field update...');
+  
+  // Update visit1.dateOfANCContact -> visit1.dateOfAncContact
+  console.log('\n1. Updating visit1.dateOfANCContact...');
+  const visit1Result = await updateFieldName('ancRecords', 'visit1.dateOfANCContact', 'visit1.dateOfAncContact');
+  
+  if (visit1Result.success) {
+    console.log(`✅ Successfully updated visit1 in ${visit1Result.updatedCount} documents`);
+  } else {
+    console.error(`❌ Error updating visit1: ${visit1Result.error}`);
+  }
+  
+  // Update visit2.dateOfANCContact -> visit2.dateOfAncContact
+  console.log('\n2. Updating visit2.dateOfANCContact...');
+  const visit2Result = await updateFieldName('ancRecords', 'visit2.dateOfANCContact', 'visit2.dateOfAncContact');
+  
+  if (visit2Result.success) {
+    console.log(`✅ Successfully updated visit2 in ${visit2Result.updatedCount} documents`);
+  } else {
+    console.error(`❌ Error updating visit2: ${visit2Result.error}`);
+  }
+  
+  console.log('\n🎉 Field name update completed!');
+}
+
+// Run the update
+updateAncContactDate().catch(console.error); 

@@ -288,20 +288,26 @@ interface TrimesterDashboardsProps {
 }
 
 const calculateMissedContacts = (patient: any) => {
-  // Determine which contacts should have been completed based on gestational age
-  const expectedContacts = contactSchedule
-    .filter((contact) => patient.weeks >= contact.maxWeeks)
-    .map((contact) => contact.contact)
-
-  // Find contacts that should have been completed but weren't
-  const missedContacts = expectedContacts.filter((expected) => !patient.contacts.includes(expected))
-
-  return {
-    missed: missedContacts,
-    missedCount: missedContacts.length,
-    expectedCount: expectedContacts.length,
+  const missed = []
+  for (let i = 1; i <= 8; i++) {
+    if (!patient.contacts.includes(i)) {
+      missed.push(i)
+    }
   }
+  return { missed, missedCount: missed.length }
 }
+
+// Get initials from first and last name
+const getInitials = (fullName: string) => {
+  if (!fullName) return "?";
+  const nameParts = fullName.trim().split(' ');
+  if (nameParts.length >= 2) {
+    return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+  } else if (nameParts.length === 1) {
+    return nameParts[0][0].toUpperCase();
+  }
+  return "?";
+};
 
 export function TrimesterDashboards({ onSelectPatient }: TrimesterDashboardsProps) {
   const [activeTab, setActiveTab] = useState("first")
@@ -869,10 +875,7 @@ export function TrimesterDashboards({ onSelectPatient }: TrimesterDashboardsProp
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={`/placeholder.svg?height=32&width=32`} />
                             <AvatarFallback className="text-xs">
-                              {patient.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")}
+                              {getInitials(patient.name)}
                             </AvatarFallback>
                           </Avatar>
                           <div>

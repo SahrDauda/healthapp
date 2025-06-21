@@ -43,6 +43,18 @@ const pendingRequests = [
 ]
 
 export function AppointmentRequests() {
+  // Get initials from first and last name
+  const getInitials = (fullName: string) => {
+    if (!fullName) return "?";
+    const nameParts = fullName.trim().split(' ');
+    if (nameParts.length >= 2) {
+      return (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+    } else if (nameParts.length === 1) {
+      return nameParts[0][0].toUpperCase();
+    }
+    return "?";
+  };
+
   const getUrgencyColor = (urgency: string) => {
     switch (urgency) {
       case "Urgent":
@@ -90,10 +102,7 @@ export function AppointmentRequests() {
                   <Avatar>
                     <AvatarImage src={`/placeholder.svg?height=40&width=40`} />
                     <AvatarFallback>
-                      {request.patientName
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
+                      {getInitials(request.patientName)}
                     </AvatarFallback>
                   </Avatar>
                   <div>
