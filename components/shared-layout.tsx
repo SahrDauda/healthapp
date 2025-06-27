@@ -81,8 +81,10 @@ export default function SharedLayout({ children, activeView: propActiveView, pat
           onViewChange={handleViewChange}
           onClose={() => setIsMobileMenuOpen(false)}
         />
-        <main className="p-4 pt-20">
-          {children}
+        <main className="p-2 pt-20">
+          <div className="max-w-[98vw] mx-auto">
+            {children}
+          </div>
         </main>
       </div>
     )
@@ -95,8 +97,8 @@ export default function SharedLayout({ children, activeView: propActiveView, pat
         <AppSidebar activeView={activeView} onViewChange={handleViewChange} patientCount={patientCount} />
         <div className="flex-1 flex flex-col">
           <DashboardHeader onLogout={handleLogout} isMobile={false} />
-          <main className="flex-1 p-4 overflow-auto">
-            <div className="max-w-7xl mx-auto">
+          <main className="flex-1 p-2 overflow-auto">
+            <div className="max-w-[98vw] mx-auto">
               {children}
             </div>
           </main>

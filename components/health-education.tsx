@@ -22,7 +22,8 @@ import {
   Edit,
   Trash2,
   Eye,
-  Download
+  Download,
+  Video
 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -36,6 +37,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore"
 import { db } from "../lib/firebase"
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem
+} from "@/components/ui/dropdown-menu"
 
 interface HealthTip {
   id: string
@@ -82,11 +89,32 @@ export function HealthEducation() {
   const [tipTargetStage, setTipTargetStage] = useState<string>("first-trimester")
   const [tipTargetWeeks, setTipTargetWeeks] = useState<string>("")
   const [tipTargetVisits, setTipTargetVisits] = useState<string>("")
+  const [createTipType, setCreateTipType] = useState<null | 'health' | 'nutrition' | 'video'>(null)
+  const [tipWeeks, setTipWeeks] = useState<string>("")
+  const [tipTrimester, setTipTrimester] = useState<string>("")
+  const [tipVisit, setTipVisit] = useState<string>("")
+  const [tipScheduleDate, setTipScheduleDate] = useState<string>("")
 
   useEffect(() => {
     fetchPatients()
     fetchHealthTips()
   }, [])
+
+  useEffect(() => {
+    if (!isCreateModalOpen) {
+      setTipTitle("");
+      setTipContent("");
+      setTipCategory("health");
+      setTipTargetStage("first-trimester");
+      setTipTargetWeeks("");
+      setTipTargetVisits("");
+      setTipWeeks("");
+      setTipTrimester("");
+      setTipVisit("");
+      setTipScheduleDate("");
+      setCreateTipType(null);
+    }
+  }, [isCreateModalOpen]);
 
   const fetchPatients = async () => {
     try {
@@ -227,27 +255,30 @@ export function HealthEducation() {
   }
 
   const handleCreateTip = async () => {
-    const newTip: Omit<HealthTip, 'id' | 'createdAt' | 'sentCount'> = {
+    // Determine collection name based on tip type
+    let collectionName = "health-tips";
+    if (createTipType === "nutrition") collectionName = "nutrition-tips";
+    if (createTipType === "video") collectionName = "health-videos";
+
+    const newTip = {
       title: tipTitle,
       content: tipContent,
-      category: tipCategory,
-      targetStage: tipTargetStage as any,
-      targetWeeks: tipTargetWeeks ? tipTargetWeeks.split(',').map(w => parseInt(w.trim())) : undefined,
-      targetVisits: tipTargetVisits ? tipTargetVisits.split(',').map(v => parseInt(v.trim())) : undefined,
+      category: createTipType,
+      weeks: tipWeeks,
+      trimester: tipTrimester,
+      visit: tipVisit,
+      schedule: tipScheduleDate,
+      createdAt: serverTimestamp(),
       isActive: true
+    };
+    try {
+      await addDoc(collection(db, collectionName), newTip);
+      alert("Tip created and saved to Firestore!");
+      setIsCreateModalOpen(false);
+    } catch (error) {
+      alert("Error saving tip: " + (error as any).message);
     }
-
-    // In real app, save to Firestore
-    console.log("Creating new tip:", newTip)
-    setIsCreateModalOpen(false)
-    
-    // Reset form
-    setTipTitle("")
-    setTipContent("")
-    setTipCategory("health")
-    setTipTargetStage("first-trimester")
-    setTipTargetWeeks("")
-    setTipTargetVisits("")
+    // Reset form (handled by useEffect on modal close)
   }
 
   const handleSendTip = async (tip: HealthTip) => {
@@ -271,283 +302,178 @@ export function HealthEducation() {
     return true
   })
 
-  const stats = {
-    totalTips: healthTips.length,
-    activeTips: healthTips.filter(tip => tip.isActive).length,
+  const tipStats = {
+    healthTips: healthTips.length,
+    nutritionTips: healthTips.filter(tip => tip.category === "nutrition").length,
     totalSent: healthTips.reduce((sum, tip) => sum + tip.sentCount, 0),
     eligiblePatients: patients.filter(p => !p.hasDelivered).length
   }
 
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Health Education</h1>
-          <p className="text-muted-foreground">Send personalized health tips and nutrition guidance to patients</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsCreateModalOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Tip
-          </Button>
-          <Button>
-            <Send className="h-4 w-4 mr-2" />
-            Send Bulk Tips
-          </Button>
+    <div className="flex-1 space-y-6 p-2 md:p-6 pt-4 md:pt-8 bg-maternal-blue-50 min-h-screen">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-maternal-blue-700">Health Education Hub</h2>
+        <div className="flex items-center space-x-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button className="bg-maternal-green-500 hover:bg-maternal-green-600 text-white font-semibold shadow-md"><Plus className="mr-2 h-4 w-4" /> Create New Tip</Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48">
+              <DropdownMenuItem onClick={() => { setCreateTipType('health'); setIsCreateModalOpen(true); }} className="hover:bg-maternal-blue-100">
+                <Heart className="mr-2 h-4 w-4 text-maternal-blue-500" /> Health Tips
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setCreateTipType('nutrition'); setIsCreateModalOpen(true); }} className="hover:bg-maternal-green-100">
+                <Apple className="mr-2 h-4 w-4 text-maternal-green-500" /> Nutrition Tips
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { setCreateTipType('video'); setIsCreateModalOpen(true); }} className="hover:bg-maternal-brown-100">
+                <Video className="mr-2 h-4 w-4 text-maternal-brown-500" /> Health Videos
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+            <DialogContent className="max-w-lg w-full rounded-xl p-6">
+              <DialogHeader>
+                <DialogTitle className="text-lg md:text-xl font-bold text-maternal-blue-700">Create {createTipType === 'health' ? 'Health Tip' : createTipType === 'nutrition' ? 'Nutrition Tip' : createTipType === 'video' ? 'Health Video' : ''}</DialogTitle>
+              </DialogHeader>
+              <form className="space-y-4" onSubmit={e => { e.preventDefault(); handleCreateTip(); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-maternal-blue-700 mb-1">Weeks</label>
+                    <Select value={tipWeeks} onValueChange={setTipWeeks}>
+                      <SelectTrigger><SelectValue placeholder="Any week (optional)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Any week</SelectItem>
+                        {[...Array(40)].map((_, i) => (
+                          <SelectItem key={i + 1} value={(i + 1).toString()}>{`Week ${i + 1}`}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-maternal-blue-700 mb-1">Trimester</label>
+                    <Select value={tipTrimester} onValueChange={setTipTrimester}>
+                      <SelectTrigger><SelectValue placeholder="Any trimester (optional)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Any trimester</SelectItem>
+                        <SelectItem value="1">Trimester 1</SelectItem>
+                        <SelectItem value="2">Trimester 2</SelectItem>
+                        <SelectItem value="3">Trimester 3</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-maternal-blue-700 mb-1">Visit / Care Type</label>
+                    <Select value={tipVisit} onValueChange={setTipVisit}>
+                      <SelectTrigger><SelectValue placeholder="Any visit or care type (optional)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Any visit or care type</SelectItem>
+                        {[...Array(8)].map((_, i) => (
+                          <SelectItem key={i + 1} value={`visit-${i + 1}`}>{`Visit ${i + 1}`}</SelectItem>
+                        ))}
+                        <SelectItem value="child-care">Child Care</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-maternal-blue-700 mb-1">Title</label>
+                  <Input value={tipTitle} onChange={e => setTipTitle(e.target.value)} placeholder="Enter tip title" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-maternal-blue-700 mb-1">Message</label>
+                  <Textarea value={tipContent} onChange={e => setTipContent(e.target.value)} placeholder="Enter tip message" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-maternal-blue-700 mb-1">Schedule Tip</label>
+                  <Input type="datetime-local" value={tipScheduleDate} onChange={e => setTipScheduleDate(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full bg-maternal-blue-600 hover:bg-maternal-blue-700 text-white font-semibold shadow">Submit</Button>
+              </form>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
-
-      {/* Statistics Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="bg-white border-0 shadow hover:shadow-lg transition-shadow group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Tips</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-semibold text-maternal-blue-700 flex items-center gap-2">
+              <Heart className="h-5 w-5 text-maternal-blue-400 group-hover:text-maternal-blue-600 transition-colors" /> Health Tips
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalTips}</div>
-            <p className="text-xs text-muted-foreground">Health & nutrition tips</p>
+            <div className="text-3xl font-bold text-maternal-blue-600">{tipStats.healthTips}</div>
+            <p className="text-xs text-maternal-blue-400 mt-1">Covering various health topics</p>
           </CardContent>
         </Card>
-        
-        <Card>
+        <Card className="bg-white border-0 shadow hover:shadow-lg transition-shadow group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Tips</CardTitle>
-            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-semibold text-maternal-green-700 flex items-center gap-2">
+              <Apple className="h-5 w-5 text-maternal-green-400 group-hover:text-maternal-green-600 transition-colors" /> Nutrition Advice
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeTips}</div>
-            <p className="text-xs text-muted-foreground">Currently active</p>
+            <div className="text-3xl font-bold text-maternal-green-600">{tipStats.nutritionTips}</div>
+            <p className="text-xs text-maternal-green-400 mt-1">Trimester-specific diet plans</p>
           </CardContent>
         </Card>
-        
-        <Card>
+        <Card className="bg-white border-0 shadow hover:shadow-lg transition-shadow group">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sent</CardTitle>
-            <Send className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-semibold text-maternal-brown-700 flex items-center gap-2">
+              <Video className="h-5 w-5 text-maternal-brown-400 group-hover:text-maternal-brown-600 transition-colors" /> Health Videos
+            </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.totalSent}</div>
-            <p className="text-xs text-muted-foreground">Tips delivered</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Eligible Patients</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.eligiblePatients}</div>
-            <p className="text-xs text-muted-foreground">Active pregnancies</p>
+            <div className="text-3xl font-bold text-maternal-brown-600">+50</div>
+            <p className="text-xs text-maternal-brown-400 mt-1">Educational video resources</p>
           </CardContent>
         </Card>
       </div>
-
-      {/* Main Content */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="health-tips" className="flex items-center gap-2">
-            <Heart className="h-4 w-4" />
-            Health Tips
+        <TabsList className="flex flex-wrap gap-2 bg-maternal-blue-100 p-2 rounded-lg">
+          <TabsTrigger value="health-tips" className="flex items-center gap-2 px-4 py-2 rounded-lg text-maternal-blue-700 data-[state=active]:bg-maternal-blue-600 data-[state=active]:text-white transition-colors">
+            <Heart className="h-4 w-4" /> Health Tips
           </TabsTrigger>
-          <TabsTrigger value="nutrition-tips" className="flex items-center gap-2">
-            <Apple className="h-4 w-4" />
-            Nutrition Tips
+          <TabsTrigger value="nutrition-tips" className="flex items-center gap-2 px-4 py-2 rounded-lg text-maternal-green-700 data-[state=active]:bg-maternal-green-600 data-[state=active]:text-white transition-colors">
+            <Apple className="h-4 w-4" /> Nutrition Tips
+          </TabsTrigger>
+          <TabsTrigger value="health-videos" className="flex items-center gap-2 px-4 py-2 rounded-lg text-maternal-brown-700 data-[state=active]:bg-maternal-brown-600 data-[state=active]:text-white transition-colors">
+            <Video className="h-4 w-4" /> Health Videos
           </TabsTrigger>
         </TabsList>
-
         <TabsContent value="health-tips" className="space-y-4">
           <HealthTipsTab 
-            tips={filteredTips.filter(tip => tip.category === "health")}
+            tips={healthTips.filter(t => t.category === 'health')}
             onSendTip={handleSendTip}
-            onEditTip={(tip) => setSelectedTip(tip)}
+            onEditTip={(tip) => { setSelectedTip(tip); /* further logic to open edit modal */}}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             filterStage={filterStage}
             setFilterStage={setFilterStage}
           />
         </TabsContent>
-
         <TabsContent value="nutrition-tips" className="space-y-4">
           <NutritionTipsTab 
-            tips={filteredTips.filter(tip => tip.category === "nutrition")}
+            tips={healthTips.filter(t => t.category === 'nutrition')}
             onSendTip={handleSendTip}
-            onEditTip={(tip) => setSelectedTip(tip)}
+            onEditTip={(tip) => { setSelectedTip(tip); /* further logic to open edit modal */}}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             filterStage={filterStage}
             setFilterStage={setFilterStage}
           />
         </TabsContent>
-      </Tabs>
-
-      {/* Create Tip Modal */}
-      <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create New Health Tip</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Category</label>
-                <Select value={tipCategory} onValueChange={(value: "health" | "nutrition") => setTipCategory(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="health">Health Tips</SelectItem>
-                    <SelectItem value="nutrition">Nutrition Tips</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Target Stage</label>
-                <Select value={tipTargetStage} onValueChange={setTipTargetStage}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="first-trimester">First Trimester</SelectItem>
-                    <SelectItem value="second-trimester">Second Trimester</SelectItem>
-                    <SelectItem value="third-trimester">Third Trimester</SelectItem>
-                    <SelectItem value="delivery">Delivery</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Title</label>
-              <Input 
-                value={tipTitle} 
-                onChange={(e) => setTipTitle(e.target.value)}
-                placeholder="Enter tip title..."
-              />
-            </div>
-            
-            <div>
-              <label className="text-sm font-medium">Content</label>
-              <Textarea 
-                value={tipContent} 
-                onChange={(e) => setTipContent(e.target.value)}
-                placeholder="Enter tip content..."
-                rows={6}
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium">Target Week (optional)</label>
-                <Select value={tipTargetWeeks} onValueChange={setTipTargetWeeks}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a week" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 42 }, (_, i) => i + 1).map(week => (
-                      <SelectItem key={week} value={String(week)}>Week {week}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-sm font-medium">Target Visit (optional)</label>
-                <Select value={tipTargetVisits} onValueChange={setTipTargetVisits}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select a visit" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 8 }, (_, i) => i + 1).map(visit => (
-                      <SelectItem key={visit} value={String(visit)}>Visit {visit}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsCreateModalOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleCreateTip}>
-                Create Tip
-              </Button>
-            </div>
+        <TabsContent value="health-videos" className="space-y-4">
+          <div className="bg-white rounded-lg shadow p-6 flex flex-col items-center justify-center min-h-[200px]">
+            <Video className="h-10 w-10 text-maternal-brown-400 mb-2" />
+            <h3 className="text-lg font-semibold text-maternal-brown-700">Health Videos</h3>
+            <p className="text-maternal-brown-500">Coming soon: A library of educational videos for expectant mothers.</p>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Send Tip Modal */}
-      <Dialog open={isSendModalOpen} onOpenChange={setIsSendModalOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Send Health Tip</DialogTitle>
-          </DialogHeader>
-          {selectedTip && (
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">{selectedTip.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground">{selectedTip.content}</p>
-                  <div className="mt-3 flex gap-2">
-                    <Badge variant="outline">{selectedTip.category}</Badge>
-                    <Badge className={getStageColor(selectedTip.targetStage)}>
-                      {selectedTip.targetStage.replace('-', ' ')}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="space-y-2">
-                <h4 className="font-medium">Eligible Patients</h4>
-                <div className="max-h-60 overflow-y-auto space-y-2">
-                  {patients.filter(patient => {
-                    if (selectedTip.targetStage === "delivery" && !patient.hasDelivered) return false
-                    if (selectedTip.targetStage !== "delivery" && patient.hasDelivered) return false
-                    if (selectedTip.targetWeeks && !selectedTip.targetWeeks.includes(patient.weeks)) return false
-                    if (selectedTip.targetVisits && !selectedTip.targetVisits.includes(patient.visitCount)) return false
-                    return true
-                  }).map(patient => (
-                    <div key={patient.id} className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="text-xs">
-                          {getInitials(patient.name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">{patient.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {patient.weeks} weeks • {patient.trimester} • {patient.visitCount} visits
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setIsSendModalOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => handleSendTip(selectedTip)}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Send to {patients.filter(patient => {
-                    if (selectedTip.targetStage === "delivery" && !patient.hasDelivered) return false
-                    if (selectedTip.targetStage !== "delivery" && patient.hasDelivered) return false
-                    if (selectedTip.targetWeeks && !selectedTip.targetWeeks.includes(patient.weeks)) return false
-                    if (selectedTip.targetVisits && !selectedTip.targetVisits.includes(patient.visitCount)) return false
-                    return true
-                  }).length} patients
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }
