@@ -35,7 +35,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp } from "firebase/firestore"
+import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore"
 import { db } from "../lib/firebase"
 import {
   DropdownMenu,
@@ -48,13 +48,16 @@ interface HealthTip {
   id: string
   title: string
   content: string
-  category: "health" | "nutrition"
+  category: "health" | "nutrition" | "video"
   targetStage: "first-trimester" | "second-trimester" | "third-trimester" | "delivery"
   targetWeeks?: number[]
   targetVisits?: number[]
   createdAt: any
   sentCount: number
   isActive: boolean
+  weeks?: string | number
+  categoryType?: string
+  nutritionType?: string
 }
 
 interface Patient {
@@ -95,6 +98,14 @@ export function HealthEducation() {
   const [tipVisit, setTipVisit] = useState<string>("")
   const [tipScheduleDate, setTipScheduleDate] = useState<string>("")
 
+  const [healthTipsCount, setHealthTipsCount] = useState(0);
+  const [nutritionTipsCount, setNutritionTipsCount] = useState(0);
+  const [healthVideosCount, setHealthVideosCount] = useState(0);
+
+  const [editTipId, setEditTipId] = useState<string | null>(null);
+  const [categoryType, setCategoryType] = useState<string>("");
+  const [nutritionType, setNutritionType] = useState<string>("");
+
   useEffect(() => {
     fetchPatients()
     fetchHealthTips()
@@ -113,6 +124,8 @@ export function HealthEducation() {
       setTipVisit("");
       setTipScheduleDate("");
       setCreateTipType(null);
+      setCategoryType("");
+      setNutritionType("");
     }
   }, [isCreateModalOpen]);
 
@@ -179,54 +192,71 @@ export function HealthEducation() {
   }
 
   const fetchHealthTips = async () => {
-    // Mock data for now - in real app, fetch from Firestore
-    const mockTips: HealthTip[] = [
-      {
-        id: "1",
-        title: "First Trimester Nutrition Guide",
-        content: "Focus on folic acid, iron, and protein. Eat plenty of leafy greens, lean meats, and whole grains. Stay hydrated and avoid raw fish and unpasteurized dairy.",
-        category: "nutrition",
-        targetStage: "first-trimester",
-        targetWeeks: [1, 12],
-        createdAt: new Date(),
-        sentCount: 45,
-        isActive: true
-      },
-      {
-        id: "2",
-        title: "Exercise Safety in Second Trimester",
-        content: "Continue moderate exercise like walking, swimming, and prenatal yoga. Avoid high-impact activities and exercises that require lying on your back.",
-        category: "health",
-        targetStage: "second-trimester",
-        targetWeeks: [13, 27],
-        createdAt: new Date(),
-        sentCount: 32,
-        isActive: true
-      },
-      {
-        id: "3",
-        title: "Third Trimester Preparation",
-        content: "Pack your hospital bag, practice breathing techniques, and discuss your birth plan with your healthcare provider. Monitor for signs of labor.",
-        category: "health",
-        targetStage: "third-trimester",
-        targetWeeks: [28, 40],
-        createdAt: new Date(),
-        sentCount: 28,
-        isActive: true
-      },
-      {
-        id: "4",
-        title: "Postpartum Recovery Tips",
-        content: "Rest when possible, eat nutritious meals, stay hydrated, and don't hesitate to ask for help. Monitor for signs of postpartum depression.",
-        category: "health",
-        targetStage: "delivery",
-        createdAt: new Date(),
-        sentCount: 15,
-        isActive: true
-      }
-    ]
-    
-    setHealthTips(mockTips)
+    try {
+      const healthTipsSnap = await getDocs(collection(db, "health-tips"));
+      const nutritionTipsSnap = await getDocs(collection(db, "nutrition-tips"));
+      const healthVideosSnap = await getDocs(collection(db, "health-videos"));
+
+      console.log('health-tips count:', healthTipsSnap.size, healthTipsSnap.docs.map(doc => doc.id));
+      console.log('nutrition-tips count:', nutritionTipsSnap.size, nutritionTipsSnap.docs.map(doc => doc.id));
+      console.log('health-videos count:', healthVideosSnap.size, healthVideosSnap.docs.map(doc => doc.id));
+      console.log('health-tips data:', healthTipsSnap.docs.map(doc => doc.data()));
+      console.log('nutrition-tips data:', nutritionTipsSnap.docs.map(doc => doc.data()));
+      console.log('health-videos data:', healthVideosSnap.docs.map(doc => doc.data()));
+
+      setHealthTipsCount(healthTipsSnap.size);
+      setNutritionTipsCount(nutritionTipsSnap.size);
+      setHealthVideosCount(healthVideosSnap.size);
+
+      const healthTipsArr = healthTipsSnap.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().title || '',
+        content: doc.data().content || '',
+        category: 'health' as const,
+        targetStage: doc.data().targetStage || '',
+        targetWeeks: doc.data().targetWeeks || [],
+        targetVisits: doc.data().targetVisits || [],
+        createdAt: doc.data().createdAt || new Date(),
+        sentCount: doc.data().sentCount || 0,
+        isActive: doc.data().isActive !== undefined ? doc.data().isActive : true,
+        weeks: doc.data().weeks,
+        categoryType: doc.data().categoryType || '',
+      }));
+      const nutritionTipsArr = nutritionTipsSnap.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().title || '',
+        content: doc.data().content || '',
+        category: 'nutrition' as const,
+        targetStage: doc.data().targetStage || '',
+        targetWeeks: doc.data().targetWeeks || [],
+        targetVisits: doc.data().targetVisits || [],
+        createdAt: doc.data().createdAt || new Date(),
+        sentCount: doc.data().sentCount || 0,
+        isActive: doc.data().isActive !== undefined ? doc.data().isActive : true,
+        weeks: doc.data().weeks,
+        nutritionType: doc.data().nutritionType || '',
+      }));
+      const healthVideosArr = healthVideosSnap.docs.map(doc => ({
+        id: doc.id,
+        title: doc.data().title || '',
+        content: doc.data().content || '',
+        category: 'video' as const,
+        targetStage: doc.data().targetStage || '',
+        targetWeeks: doc.data().targetWeeks || [],
+        targetVisits: doc.data().targetVisits || [],
+        createdAt: doc.data().createdAt || new Date(),
+        sentCount: doc.data().sentCount || 0,
+        isActive: doc.data().isActive !== undefined ? doc.data().isActive : true,
+        weeks: doc.data().weeks
+      }));
+      setHealthTips([
+        ...healthTipsArr,
+        ...nutritionTipsArr,
+        ...healthVideosArr,
+      ]);
+    } catch (error) {
+      alert("Error fetching tips: " + (error as any).message);
+    }
   }
 
   const getInitials = (fullName: string) => {
@@ -254,32 +284,69 @@ export function HealthEducation() {
     return category === "health" ? Heart : Apple
   }
 
+  const handleEditTip = (tip: HealthTip) => {
+    setEditTipId(tip.id);
+    setTipTitle(tip.title);
+    setTipContent(tip.content);
+    setTipWeeks(tip.weeks ? String(tip.weeks) : "any");
+    setTipTrimester(tip.targetStage || "any");
+    setTipVisit(tip.targetVisits && tip.targetVisits.length > 0 ? String(tip.targetVisits[0]) : "any");
+    setTipScheduleDate("");
+    setCreateTipType(tip.category);
+    setCategoryType(tip.categoryType || "");
+    setNutritionType(tip.nutritionType || "");
+    setIsCreateModalOpen(true);
+  };
+
   const handleCreateTip = async () => {
-    // Determine collection name based on tip type
     let collectionName = "health-tips";
     if (createTipType === "nutrition") collectionName = "nutrition-tips";
     if (createTipType === "video") collectionName = "health-videos";
-
+    const weeks = tipWeeks === "any" ? null : tipWeeks;
+    const trimester = tipTrimester === "any" ? null : tipTrimester;
+    const visit = tipVisit === "any" ? null : tipVisit;
     const newTip = {
       title: tipTitle,
       content: tipContent,
       category: createTipType,
-      weeks: tipWeeks,
-      trimester: tipTrimester,
-      visit: tipVisit,
+      weeks,
+      trimester,
+      visit,
       schedule: tipScheduleDate,
       createdAt: serverTimestamp(),
-      isActive: true
+      isActive: true,
+      ...(createTipType === 'health' && { categoryType }),
+      ...(createTipType === 'nutrition' && { nutritionType }),
     };
     try {
-      await addDoc(collection(db, collectionName), newTip);
-      alert("Tip created and saved to Firestore!");
+      if (editTipId) {
+        await updateDoc(doc(db, collectionName, editTipId), newTip);
+        alert("Tip updated!");
+      } else {
+        await addDoc(collection(db, collectionName), newTip);
+        alert("Tip created and saved to Firestore!");
+      }
       setIsCreateModalOpen(false);
+      setEditTipId(null);
+      fetchHealthTips();
     } catch (error) {
       alert("Error saving tip: " + (error as any).message);
     }
-    // Reset form (handled by useEffect on modal close)
-  }
+  };
+
+  const handleDeleteTip = async (tip: HealthTip) => {
+    if (!window.confirm("Are you sure you want to delete this tip?")) return;
+    let collectionName = "health-tips";
+    if (tip.category === "nutrition") collectionName = "nutrition-tips";
+    if (tip.category === "video") collectionName = "health-videos";
+    try {
+      await deleteDoc(doc(db, collectionName, tip.id));
+      alert("Tip deleted!");
+      fetchHealthTips();
+    } catch (error) {
+      alert("Error deleting tip: " + (error as any).message);
+    }
+  };
 
   const handleSendTip = async (tip: HealthTip) => {
     // Filter patients based on tip criteria
@@ -346,7 +413,7 @@ export function HealthEducation() {
                     <Select value={tipWeeks} onValueChange={setTipWeeks}>
                       <SelectTrigger><SelectValue placeholder="Any week (optional)" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any week</SelectItem>
+                        <SelectItem value="any">Any week</SelectItem>
                         {[...Array(40)].map((_, i) => (
                           <SelectItem key={i + 1} value={(i + 1).toString()}>{`Week ${i + 1}`}</SelectItem>
                         ))}
@@ -358,7 +425,7 @@ export function HealthEducation() {
                     <Select value={tipTrimester} onValueChange={setTipTrimester}>
                       <SelectTrigger><SelectValue placeholder="Any trimester (optional)" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any trimester</SelectItem>
+                        <SelectItem value="any">Any trimester</SelectItem>
                         <SelectItem value="1">Trimester 1</SelectItem>
                         <SelectItem value="2">Trimester 2</SelectItem>
                         <SelectItem value="3">Trimester 3</SelectItem>
@@ -370,7 +437,7 @@ export function HealthEducation() {
                     <Select value={tipVisit} onValueChange={setTipVisit}>
                       <SelectTrigger><SelectValue placeholder="Any visit or care type (optional)" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any visit or care type</SelectItem>
+                        <SelectItem value="any">Any visit or care type</SelectItem>
                         {[...Array(8)].map((_, i) => (
                           <SelectItem key={i + 1} value={`visit-${i + 1}`}>{`Visit ${i + 1}`}</SelectItem>
                         ))}
@@ -391,6 +458,32 @@ export function HealthEducation() {
                   <label className="block text-sm font-medium text-maternal-blue-700 mb-1">Schedule Tip</label>
                   <Input type="datetime-local" value={tipScheduleDate} onChange={e => setTipScheduleDate(e.target.value)} />
                 </div>
+                {createTipType === 'health' && (
+                  <div>
+                    <label className="block text-sm font-medium text-maternal-blue-700 mb-1">Category</label>
+                    <Select value={categoryType} onValueChange={setCategoryType}>
+                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="General Health">General Health</SelectItem>
+                        <SelectItem value="Physical Health">Physical Health</SelectItem>
+                        <SelectItem value="Mental Health">Mental Health</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+                {createTipType === 'nutrition' && (
+        <div>
+                    <label className="block text-sm font-medium text-maternal-green-700 mb-1">Category</label>
+                    <Select value={nutritionType} onValueChange={setNutritionType}>
+                      <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Pregnancy Nutrition">Pregnancy Nutrition</SelectItem>
+                        <SelectItem value="Snacks">Snacks</SelectItem>
+                        <SelectItem value="Safety">Safety</SelectItem>
+                      </SelectContent>
+                    </Select>
+        </div>
+                )}
                 <Button type="submit" className="w-full bg-maternal-blue-600 hover:bg-maternal-blue-700 text-white font-semibold shadow">Submit</Button>
               </form>
             </DialogContent>
@@ -405,7 +498,7 @@ export function HealthEducation() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-maternal-blue-600">{tipStats.healthTips}</div>
+            <div className="text-3xl font-bold text-maternal-blue-600">{healthTipsCount}</div>
             <p className="text-xs text-maternal-blue-400 mt-1">Covering various health topics</p>
           </CardContent>
         </Card>
@@ -416,7 +509,7 @@ export function HealthEducation() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-maternal-green-600">{tipStats.nutritionTips}</div>
+            <div className="text-3xl font-bold text-maternal-green-600">{nutritionTipsCount}</div>
             <p className="text-xs text-maternal-green-400 mt-1">Trimester-specific diet plans</p>
           </CardContent>
         </Card>
@@ -427,7 +520,7 @@ export function HealthEducation() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-maternal-brown-600">+50</div>
+            <div className="text-3xl font-bold text-maternal-brown-600">{healthVideosCount}</div>
             <p className="text-xs text-maternal-brown-400 mt-1">Educational video resources</p>
           </CardContent>
         </Card>
@@ -446,9 +539,16 @@ export function HealthEducation() {
         </TabsList>
         <TabsContent value="health-tips" className="space-y-4">
           <HealthTipsTab 
-            tips={healthTips.filter(t => t.category === 'health')}
+            tips={healthTips
+              .filter(t => t.category === 'health')
+              .sort((a, b) => {
+                const weekA = a.weeks && !isNaN(Number(a.weeks)) ? Number(a.weeks) : 9999;
+                const weekB = b.weeks && !isNaN(Number(b.weeks)) ? Number(b.weeks) : 9999;
+                return weekA - weekB;
+              })}
             onSendTip={handleSendTip}
-            onEditTip={(tip) => { setSelectedTip(tip); /* further logic to open edit modal */}}
+            onEditTip={handleEditTip}
+            onDeleteTip={handleDeleteTip}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             filterStage={filterStage}
@@ -457,9 +557,16 @@ export function HealthEducation() {
         </TabsContent>
         <TabsContent value="nutrition-tips" className="space-y-4">
           <NutritionTipsTab 
-            tips={healthTips.filter(t => t.category === 'nutrition')}
+            tips={healthTips
+              .filter(t => t.category === 'nutrition')
+              .sort((a, b) => {
+                const weekA = a.weeks && !isNaN(Number(a.weeks)) ? Number(a.weeks) : 9999;
+                const weekB = b.weeks && !isNaN(Number(b.weeks)) ? Number(b.weeks) : 9999;
+                return weekA - weekB;
+              })}
             onSendTip={handleSendTip}
-            onEditTip={(tip) => { setSelectedTip(tip); /* further logic to open edit modal */}}
+            onEditTip={handleEditTip}
+            onDeleteTip={handleDeleteTip}
             searchTerm={searchTerm}
             setSearchTerm={setSearchTerm}
             filterStage={filterStage}
@@ -483,6 +590,7 @@ function HealthTipsTab({
   tips, 
   onSendTip, 
   onEditTip, 
+  onDeleteTip,
   searchTerm, 
   setSearchTerm, 
   filterStage, 
@@ -491,6 +599,7 @@ function HealthTipsTab({
   tips: HealthTip[]
   onSendTip: (tip: HealthTip) => void
   onEditTip: (tip: HealthTip) => void
+  onDeleteTip: (tip: HealthTip) => void
   searchTerm: string
   setSearchTerm: (term: string) => void
   filterStage: string
@@ -525,14 +634,18 @@ function HealthTipsTab({
 
       {/* Tips Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {tips.map((tip) => (
-          <Card key={tip.id} className="hover:shadow-md transition-shadow">
+        {tips.map((tip, idx) => (
+          <Card key={tip.id} className="hover:shadow-md transition-shadow relative">
+            <div className="absolute top-2 left-2 flex flex-col items-center">
+              <div className="bg-maternal-blue-100 text-maternal-blue-700 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm shadow">{idx + 1}</div>
+              <div className="mt-1 text-xs text-maternal-blue-600 font-semibold">{tip.weeks ? `Week ${String(tip.weeks)}` : ''}</div>
+            </div>
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <Heart className="h-5 w-5 text-red-500" />
                   <Badge className={getStageColor(tip.targetStage)}>
-                    {tip.targetStage.replace('-', ' ')}
+                    {tip.targetStage ? tip.targetStage.replace('-', ' ') : 'All Stages'}
                   </Badge>
                 </div>
                 <div className="flex gap-1">
@@ -542,9 +655,17 @@ function HealthTipsTab({
                   <Button variant="ghost" size="sm" onClick={() => onSendTip(tip)}>
                     <Send className="h-4 w-4" />
                   </Button>
+                  <Button variant="ghost" size="sm" onClick={() => onDeleteTip(tip)}>
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
                 </div>
               </div>
-              <CardTitle className="text-lg">{tip.title}</CardTitle>
+              <CardTitle className="text-lg flex flex-col gap-1">
+                {tip.title}
+                {tip.categoryType && (
+                  <span className="text-xs font-medium text-maternal-blue-500 bg-maternal-blue-100 rounded px-2 py-0.5 w-fit">{tip.categoryType}</span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground line-clamp-3">
@@ -552,7 +673,13 @@ function HealthTipsTab({
               </p>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Sent {tip.sentCount} times</span>
-                <span>{tip.createdAt.toLocaleDateString()}</span>
+                <span>
+                  {tip.createdAt
+                    ? (tip.createdAt.toDate
+                        ? tip.createdAt.toDate().toLocaleDateString()
+                        : new Date(tip.createdAt).toLocaleDateString())
+                    : 'N/A'}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -577,6 +704,7 @@ function NutritionTipsTab({
   tips, 
   onSendTip, 
   onEditTip, 
+  onDeleteTip,
   searchTerm, 
   setSearchTerm, 
   filterStage, 
@@ -585,6 +713,7 @@ function NutritionTipsTab({
   tips: HealthTip[]
   onSendTip: (tip: HealthTip) => void
   onEditTip: (tip: HealthTip) => void
+  onDeleteTip: (tip: HealthTip) => void
   searchTerm: string
   setSearchTerm: (term: string) => void
   filterStage: string
@@ -619,14 +748,18 @@ function NutritionTipsTab({
 
       {/* Tips Grid */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {tips.map((tip) => (
-          <Card key={tip.id} className="hover:shadow-md transition-shadow">
+        {tips.map((tip, idx) => (
+          <Card key={tip.id} className="hover:shadow-md transition-shadow relative">
+            <div className="absolute top-2 left-2 flex flex-col items-center">
+              <div className="bg-maternal-green-100 text-maternal-green-700 rounded-full w-7 h-7 flex items-center justify-center font-bold text-sm shadow">{idx + 1}</div>
+              <div className="mt-1 text-xs text-maternal-green-600 font-semibold">{tip.weeks ? `Week ${String(tip.weeks)}` : ''}</div>
+            </div>
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-2">
                   <Apple className="h-5 w-5 text-green-500" />
                   <Badge className={getStageColor(tip.targetStage)}>
-                    {tip.targetStage.replace('-', ' ')}
+                    {tip.targetStage ? tip.targetStage.replace('-', ' ') : 'All Stages'}
                   </Badge>
                 </div>
                 <div className="flex gap-1">
@@ -636,9 +769,17 @@ function NutritionTipsTab({
                   <Button variant="ghost" size="sm" onClick={() => onSendTip(tip)}>
                     <Send className="h-4 w-4" />
                   </Button>
+                  <Button variant="ghost" size="sm" onClick={() => onDeleteTip(tip)}>
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
                 </div>
               </div>
-              <CardTitle className="text-lg">{tip.title}</CardTitle>
+              <CardTitle className="text-lg flex flex-col gap-1">
+                {tip.title}
+                {tip.nutritionType && (
+                  <span className="text-xs font-medium text-maternal-green-600 bg-maternal-green-100 rounded px-2 py-0.5 w-fit">{tip.nutritionType}</span>
+                )}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground line-clamp-3">
@@ -646,7 +787,13 @@ function NutritionTipsTab({
               </p>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Sent {tip.sentCount} times</span>
-                <span>{tip.createdAt.toLocaleDateString()}</span>
+                <span>
+                  {tip.createdAt
+                    ? (tip.createdAt.toDate
+                        ? tip.createdAt.toDate().toLocaleDateString()
+                        : new Date(tip.createdAt).toLocaleDateString())
+                    : 'N/A'}
+                </span>
               </div>
             </CardContent>
           </Card>
