@@ -381,7 +381,7 @@ export function HealthEducation() {
   }
 
   return (
-    <div className="flex-1 space-y-6 p-2 md:p-6 pt-4 md:pt-8 bg-maternal-blue-50 min-h-screen">
+    <div className="flex-1 space-y-6 p-2 md:p-6 pt-4 md:pt-8 bg-gray-50 min-h-screen">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-maternal-blue-700">Health Education Hub</h2>
         <div className="flex items-center space-x-2">
