@@ -57,10 +57,10 @@ const monthlyTrends = [
 ]
 
 const upcomingDueDates = [
-  { name: "Maria Rodriguez", dueDate: "2024-02-15", weeks: 36, risk: "Medium" },
-  { name: "Emma Thompson", dueDate: "2024-03-20", weeks: 24, risk: "Low" },
-  { name: "Sarah Chen", dueDate: "2024-04-10", weeks: 12, risk: "Low" },
-  { name: "Lisa Anderson", dueDate: "2024-04-25", weeks: 8, risk: "Low" },
+  { name: "Marie Kamara", dueDate: "2024-02-15", weeks: 36, risk: "Medium" },
+  { name: "Emmanuella Turay", dueDate: "2024-03-20", weeks: 24, risk: "Low" },
+  { name: "Sarah Conteh", dueDate: "2024-04-10", weeks: 12, risk: "Low" },
+  { name: "Clara Deen", dueDate: "2024-04-25", weeks: 8, risk: "Low" },
 ]
 
 export function DashboardOverview() {
