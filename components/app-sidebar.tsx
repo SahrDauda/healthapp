@@ -57,86 +57,50 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
       title: "Dashboard",
       icon: Home,
       id: "dashboard",
-      color: "bg-blue-500",
-      activeColor: "bg-blue-600",
-      textColor: "text-blue-700",
-      hoverColor: "hover:bg-blue-50",
     },
     {
       title: "Patients",
       icon: Users,
       id: "patients",
       badge: patientCount.toString(),
-      color: "bg-emerald-500",
-      activeColor: "bg-emerald-600",
-      textColor: "text-emerald-700",
-      hoverColor: "hover:bg-emerald-50",
     },
-    {
-      title: "Trimester Views",
-      icon: Activity,
-      id: "trimester-views",
-      color: "bg-purple-500",
-      activeColor: "bg-purple-600",
-      textColor: "text-purple-700",
-      hoverColor: "hover:bg-purple-50",
-    },
+    // {
+    //   title: "Trimester Views",
+    //   icon: Activity,
+    //   id: "trimester-views",
+    // },
     {
       title: "Health Education",
       icon: BookOpen,
       id: "health-education",
-      color: "bg-indigo-500",
-      activeColor: "bg-indigo-600",
-      textColor: "text-indigo-700",
-      hoverColor: "hover:bg-indigo-50",
     },
-    {
-      title: "Appointment Requests",
-      icon: Clock,
-      id: "requests",
-      badge: "3",
-      color: "bg-amber-500",
-      activeColor: "bg-amber-600",
-      textColor: "text-amber-700",
-      hoverColor: "hover:bg-amber-50",
-    },
-    {
-      title: "Analytics",
-      icon: TrendingUp,
-      id: "analytics",
-      color: "bg-cyan-500",
-      activeColor: "bg-cyan-600",
-      textColor: "text-cyan-700",
-      hoverColor: "hover:bg-cyan-50",
-    },
+    // {
+    //   title: "Appointment Requests",
+    //   icon: Clock,
+    //   id: "requests",
+    //   badge: "3",
+    // },
+    // {
+    //   title: "Analytics",
+    //   icon: TrendingUp,
+    //   id: "analytics",
+    // },
     {
       title: "Notifications",
       icon: Bell,
       id: "notifications",
       badge: notificationCount !== null ? notificationCount.toString() : undefined,
-      color: "bg-pink-500",
-      activeColor: "bg-pink-600",
-      textColor: "text-pink-700",
-      hoverColor: "hover:bg-pink-50",
     },
     {
       title: "Reports",
       icon: AlertTriangle,
       id: "report",
       badge: unreadReportCount > 0 ? unreadReportCount.toString() : undefined,
-      color: "bg-red-500",
-      activeColor: "bg-red-600",
-      textColor: "text-red-700",
-      hoverColor: "hover:bg-red-50",
     },
     {
       title: "Medical Records",
       icon: FileText,
       id: "records",
-      color: "bg-slate-500",
-      activeColor: "bg-slate-600",
-      textColor: "text-slate-700",
-      hoverColor: "hover:bg-slate-50",
     },
   ]
 
@@ -169,29 +133,21 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
                     className={`
                       group w-full justify-start px-3 py-2.5 rounded-lg
                       ${activeView === item.id
-                        ? `${item.activeColor} text-white`
-                        : `${item.textColor} ${item.hoverColor}`
+                        ? `bg-blue-600 text-white`
+                        : `text-black hover:bg-blue-50`
                       }
                     `}
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <div className={`
-                        flex items-center justify-center w-7 h-7 rounded-md
-                        ${activeView === item.id
-                          ? 'bg-white/20'
-                          : `${item.color} text-white`
-                        }
-                      `}>
-                        <item.icon className="h-4 w-4" />
-                      </div>
-                      <span className="font-medium text-sm">{item.title}</span>
+                      <item.icon className={`h-4 w-4 ${activeView === item.id ? 'text-white' : 'text-black'}`} />
+                      <span className={`font-medium text-sm ${activeView === item.id ? 'text-white' : 'text-black'}`}>{item.title}</span>
                       {item.badge !== undefined && (
                         <Badge
                           className={`
                             ml-auto px-2 py-0.5 text-xs font-medium rounded-full
                             ${activeView === item.id
                               ? 'bg-white/20 text-white'
-                              : `${item.color} text-white`
+                              : 'bg-blue-500 text-white'
                             }
                           `}
                         >
