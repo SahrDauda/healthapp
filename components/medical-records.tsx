@@ -737,12 +737,18 @@ export function MedicalRecords() {
                           <TableHead>Blood Type</TableHead>
                           <TableHead>BMI</TableHead>
                           <TableHead>Last Visit</TableHead>
-                          <TableHead>Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredPatients.map((patient) => (
-                          <TableRow key={patient.id}>
+                          <TableRow
+                            key={patient.id}
+                            className="cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() => {
+                              setSelectedPatient(patient);
+                              setIsDetailModalOpen(true);
+                            }}
+                          >
                             <TableCell>
                               <div className="flex items-center space-x-3">
                                 <Avatar className="h-8 w-8">
@@ -769,30 +775,7 @@ export function MedicalRecords() {
                             <TableCell>{patient.bloodType}</TableCell>
                             <TableCell>{patient.bmi}</TableCell>
                             <TableCell>{new Date(patient.lastVisit).toLocaleDateString()}</TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent>
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setSelectedPatient(patient)
-                                      setIsDetailModalOpen(true)
-                                    }}
-                                  >
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem>
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    Medical History
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
+                            {/* Actions column removed; row is now clickable */}
                           </TableRow>
                         ))}
                       </TableBody>

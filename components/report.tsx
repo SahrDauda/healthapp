@@ -116,9 +116,11 @@ export default function ReportList() {
   }, []);
 
   const handleRowClick = (report: Report) => {
-    setSelectedReport(report);
+    if (!report.isRead) {
+      markAsRead(report.id);
+    }
+    setSelectedReport({ ...report, isRead: true });
     setIsModalOpen(true);
-    // Don't automatically mark as read - let user control this
   };
 
   const markAsRead = async (reportId: string) => {
@@ -681,7 +683,6 @@ The HealthMama Support Team`);
                   <TableHead className="font-semibold text-gray-700 text-base">Date</TableHead>
                   <TableHead className="font-semibold text-gray-700 text-base">Description</TableHead>
                   <TableHead className="font-semibold text-gray-700 text-base">Documents</TableHead>
-                  <TableHead className="font-semibold text-gray-700 w-20 text-base">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -690,7 +691,12 @@ The HealthMama Support Team`);
                   return (
                     <React.Fragment key={report.id}>
                   <TableRow
-                        className="hover:bg-maternal-green-50/50 transition-colors border-b"
+                        className="hover:bg-maternal-green-50/50 transition-colors border-b cursor-pointer"
+                        onClick={e => {
+                          // Prevent row click if clicking on a button inside the row
+                          if ((e.target as HTMLElement).closest('button')) return;
+                          handleRowClick(report);
+                        }}
                       >
                         <TableCell className="py-4">
                           <div className="flex items-center space-x-2">
@@ -794,75 +800,7 @@ The HealthMama Support Team`);
                           </div>
                         </TableCell>
                         <TableCell className="py-4">
-                          <div className="flex items-center space-x-2">
-                            <Button
-                              variant="default"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRowClick(report);
-                              }}
-                              className="h-10 px-4 bg-maternal-green-600 hover:bg-maternal-green-700 text-white text-sm"
-                            >
-                              <Eye className="h-5 w-5 mr-1" />
-                              View
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleReply(report);
-                              }}
-                              className="h-10 w-10 p-0 hover:bg-blue-100"
-                              title="Send Reply"
-                            >
-                              <MessageSquare className="h-5 w-5 text-blue-600" />
-                            </Button>
-                            {!report.isRead && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsRead(report.id);
-                                }}
-                                className="h-10 w-10 p-0 hover:bg-orange-100"
-                                title="Mark as Read & Send Response"
-                              >
-                                <Eye className="h-5 w-5 text-orange-600" />
-                              </Button>
-                            )}
-                            {report.isRead && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsUnread(report.id);
-                                }}
-                                className="h-10 w-10 p-0 hover:bg-gray-100"
-                                title="Mark as Unread"
-                              >
-                                <Eye className="h-5 w-5 text-gray-600" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleRowExpansion(report.id);
-                              }}
-                              className="h-10 w-10 p-0 hover:bg-maternal-green-100"
-                            >
-                              {isExpanded ? (
-                                <ChevronUp className="h-5 w-5 text-gray-600" />
-                              ) : (
-                                <ChevronDown className="h-5 w-5 text-gray-600" />
-                              )}
-                            </Button>
-                          </div>
+                          {/* Action buttons moved to modal */}
                         </TableCell>
                       </TableRow>
                       
@@ -1210,6 +1148,35 @@ The HealthMama Support Team`);
                   )}
                 </div>
               </div>
+            </div>
+          )}
+          {selectedReport && (
+            <div className="flex justify-end gap-2 pt-4 border-t mt-6">
+              {/* Reply button (if not replied) */}
+              {!selectedReport.reply && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleReply(selectedReport)}
+                  className="flex items-center gap-2"
+                >
+                  <MessageSquare className="h-5 w-5 text-blue-600" />
+                  Reply
+                </Button>
+              )}
+              {/* Mark as Read button (only if unread, and cannot unread) */}
+              {!selectedReport.isRead && (
+                <Button
+                  variant="outline"
+                  onClick={() => markAsRead(selectedReport.id)}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-5 w-5 text-orange-600" />
+                  Mark as Read
+                </Button>
+              )}
+              <Button variant="default" onClick={() => setIsModalOpen(false)}>
+                Close
+              </Button>
             </div>
           )}
         </DialogContent>

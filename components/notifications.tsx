@@ -207,16 +207,15 @@ export function Notifications() {
                 <TableHead>Type</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Created At</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                  <TableCell colSpan={5} className="text-center">Loading...</TableCell>
                 </TableRow>
               ) : filteredNotifications.map(n => (
-                <TableRow key={n.id}>
+                <TableRow key={n.id} onClick={() => handleView(n)} className="cursor-pointer hover:bg-gray-50 transition-colors">
                   <TableCell className="font-medium">{n.title}</TableCell>
                   <TableCell className="text-muted-foreground truncate max-w-xs">{n.message}</TableCell>
                   <TableCell>
@@ -227,14 +226,6 @@ export function Notifications() {
                   </TableCell>
                   <TableCell>{getStatusBadge(n.status)}</TableCell>
                   <TableCell>{n.createdAt.toDate().toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleView(n)}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(n.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -352,6 +343,11 @@ export function Notifications() {
               
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+                {selectedNotification.id && (
+                  <Button variant="destructive" onClick={() => handleDelete(selectedNotification.id)} disabled={isSubmitting}>
+                    Delete
+                  </Button>
+                )}
                 <Button onClick={handleSave} disabled={isSubmitting}>
                   {isSubmitting ? 'Saving...' : (selectedNotification.id ? 'Save Changes' : 'Create Notification')}
                 </Button>
