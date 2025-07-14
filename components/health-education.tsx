@@ -106,6 +106,8 @@ export function HealthEducation() {
   const [categoryType, setCategoryType] = useState<string>("");
   const [nutritionType, setNutritionType] = useState<string>("");
 
+  const currentUserId = "admin"; // Replace with actual user ID from auth
+
   useEffect(() => {
     fetchPatients()
     fetchHealthTips()
@@ -313,17 +315,24 @@ export function HealthEducation() {
       trimester,
       visit,
       schedule: tipScheduleDate,
-      createdAt: serverTimestamp(),
       isActive: true,
       ...(createTipType === 'health' && { categoryType }),
       ...(createTipType === 'nutrition' && { nutritionType }),
     };
     try {
       if (editTipId) {
-        await updateDoc(doc(db, collectionName, editTipId), newTip);
+        await updateDoc(doc(db, collectionName, editTipId), {
+          ...newTip,
+          updatedAt: serverTimestamp(),
+          updatedBy: currentUserId,
+        });
         alert("Tip updated!");
       } else {
-        await addDoc(collection(db, collectionName), newTip);
+        await addDoc(collection(db, collectionName), {
+          ...newTip,
+          createdAt: serverTimestamp(),
+          createdBy: currentUserId,
+        });
         alert("Tip created and saved to Firestore!");
       }
       setIsCreateModalOpen(false);
