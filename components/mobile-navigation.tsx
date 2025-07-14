@@ -1,6 +1,6 @@
 "use client"
 
-import { BookOpen, Users, Clock, FileText, Bell, Heart, BarChart3, TrendingUp, X, Settings } from "lucide-react"
+import { BookOpen, Users, Clock, FileText, Bell, Heart, BarChart3, TrendingUp, X, Settings, MessageSquare } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -19,6 +19,18 @@ const menuItems = [
     icon: BarChart3,
     id: "dashboard",
     description: "Overview and key metrics",
+  },
+  {
+    title: "Messages",
+    icon: MessageSquare,
+    id: "messages",
+    description: "Patient messages and communications",
+  },
+  {
+    title: "Charts",
+    icon: BarChart3,
+    id: "charts",
+    description: "Analytics and data visualization",
   },
   {
     title: "Patient Profiles",

@@ -12,6 +12,8 @@ import { Notifications } from "../components/notifications"
 import { MedicalRecords } from "../components/medical-records"
 import { TrimesterDashboards } from "../components/trimester-dashboards"
 import { HealthEducation } from "../components/health-education"
+import { Messages } from "../components/messages"
+import { ChartsData } from "../components/charts-data"
 import SharedLayout from "../components/shared-layout"
 
 export default function Dashboard() {
@@ -39,6 +41,10 @@ export default function Dashboard() {
     switch (activeView) {
       case "dashboard":
         return <DashboardOverview />
+      case "messages":
+        return <Messages />
+      case "charts":
+        return <ChartsData />
       case "patients":
         return <PatientProfiles onSelectPatient={setSelectedPatient} setFilteredPatientCount={setFilteredPatientCount} />
       case "trimester-views":

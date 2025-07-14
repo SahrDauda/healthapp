@@ -1,6 +1,6 @@
 "use client"
 
-import { BookOpen, Users, Clock, FileText, Settings, Bell, Heart, BarChart3, TrendingUp, AlertTriangle, Home, Activity } from "lucide-react"
+import { BookOpen, Users, Clock, FileText, Settings, Bell, Heart, BarChart3, TrendingUp, AlertTriangle, Home, Activity, MessageSquare } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
 import { useEffect, useState } from "react"
-import { collection, getDocs } from "firebase/firestore"
+import { collection, getDocs, onSnapshot } from "firebase/firestore"
 import { db } from "../lib/firebase"
 
 interface AppSidebarProps {
@@ -28,8 +28,20 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
   const [notificationCount, setNotificationCount] = useState<number | null>(null);
   const [reportCount, setReportCount] = useState<number>(0);
   const [unreadReportCount, setUnreadReportCount] = useState<number>(0);
+  const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0);
 
   useEffect(() => {
+    // Real-time updates for unread messages count
+    const unsubscribe = db ? onSnapshot(collection(db, "chats"), (snapshot) => {
+      let totalUnread = 0;
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        totalUnread += data.unreadCount || 0;
+      });
+      setUnreadMessagesCount(totalUnread);
+    }) : undefined;
+
+    // Other counts (notifications, reports) can remain as getDocs
     const fetchCounts = async () => {
       try {
         // Fetch notification count
@@ -48,8 +60,8 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
         setUnreadReportCount(0);
       }
     };
-
     fetchCounts();
+    return () => { if (unsubscribe) unsubscribe(); };
   }, []);
 
   const menuItems = [
@@ -57,6 +69,17 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
       title: "Dashboard",
       icon: Home,
       id: "dashboard",
+    },
+    {
+      title: "Messages",
+      icon: MessageSquare,
+      id: "messages",
+      badge: unreadMessagesCount.toString(),
+    },
+    {
+      title: "Charts",
+      icon: BarChart3,
+      id: "charts",
     },
     {
       title: "Patients",
@@ -95,7 +118,7 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
       title: "Reports",
       icon: AlertTriangle,
       id: "report",
-      badge: unreadReportCount > 0 ? unreadReportCount.toString() : undefined,
+      badge: unreadReportCount.toString(),
     },
     {
       title: "Medical Records",

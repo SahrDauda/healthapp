@@ -92,7 +92,8 @@ export function Notifications() {
         const { id, ...newNotification } = selectedNotification;
         const notificationData = {
           ...newNotification,
-          createdAt: serverTimestamp()
+          createdAt: serverTimestamp(),
+          isRead: false // Add isRead field
         };
         await addDoc(collection(db, "notifications"), notificationData);
         toast.success("Notification created successfully.");
