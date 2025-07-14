@@ -45,6 +45,7 @@ export function Messages() {
   const [replyContent, setReplyContent] = useState("")
   const [sending, setSending] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
+  const currentUserId = "admin"; // Replace with actual user ID from auth
 
   // Fetch chat list
   useEffect(() => {
@@ -121,14 +122,18 @@ export function Messages() {
         senderId: "health_worker",
         receiverId: selectedChat.userId,
         text: replyContent,
-        timestamp: serverTimestamp()
+        timestamp: serverTimestamp(),
+        createdAt: serverTimestamp(),
+        createdBy: currentUserId,
       })
       setReplyContent("")
       // Update lastMessage and lastMessageTime in chat summary
       await updateDoc(doc(db, "chats", selectedChat.id), {
         lastMessage: replyContent,
         lastMessageTime: serverTimestamp(),
-        unreadCount: 0 // admin just sent
+        unreadCount: 0, // admin just sent
+        updatedAt: serverTimestamp(),
+        updatedBy: currentUserId,
       })
     } catch (error) {
       console.error("Error sending reply:", error)

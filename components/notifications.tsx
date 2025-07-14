@@ -93,13 +93,18 @@ export function Notifications() {
         const notificationData = {
           ...newNotification,
           createdAt: serverTimestamp(),
+          createdBy: "admin", // Replace with actual user ID from auth
           isRead: false // Add isRead field
         };
         await addDoc(collection(db, "notifications"), notificationData);
         toast.success("Notification created successfully.");
       } else {
         const { id, createdAt, ...dataToUpdate } = selectedNotification;
-        await updateDoc(doc(db, "notifications", id), dataToUpdate);
+        await updateDoc(doc(db, "notifications", id), {
+          ...dataToUpdate,
+          updatedAt: serverTimestamp(),
+          updatedBy: "admin", // Replace with actual user ID from auth
+        });
         toast.success("Notification updated successfully.");
       }
       
