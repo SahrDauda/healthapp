@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { PatientProfiles } from "../components/patient-profiles"
 import { AppointmentCalendar } from "../components/appointment-calendar"
 import { AppointmentRequests } from "../components/appointment-requests"
@@ -13,20 +13,28 @@ import { MedicalRecords } from "../components/medical-records"
 import { TrimesterDashboards } from "../components/trimester-dashboards"
 import { HealthEducation } from "../components/health-education"
 import { Messages } from "../components/messages"
-import { ChartsData } from "../components/charts-data"
-import SharedLayout from "../components/shared-layout"
+import { useLocalAuth } from "../hooks/use-auth";
 
 export default function Dashboard() {
   const searchParams = useSearchParams()
   const [activeView, setActiveView] = useState("dashboard")
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null)
   const [filteredPatientCount, setFilteredPatientCount] = useState(0)
+  const { role, loading } = useLocalAuth();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Update active view based on URL parameters
   useEffect(() => {
     const view = searchParams.get('view') || 'dashboard'
     setActiveView(view)
   }, [searchParams])
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // setRole(localStorage.getItem('userRole') || 'admin'); // This line is removed as per the edit hint
+    }
+  }, []);
 
   const handleViewChange = (view: string) => {
     setActiveView(view);
@@ -35,7 +43,21 @@ export default function Dashboard() {
 
   const renderContent = () => {
     if (selectedPatient) {
-      return <PatientDetail patientId={selectedPatient} onBack={() => setSelectedPatient(null)} />
+      return <PatientDetail patient={selectedPatient} onBack={() => setSelectedPatient(null)} />
+    }
+
+    // Route for clinicians
+    if (role === 'clinician') {
+      if (pathname === '/patients') {
+        const PatientsPage = require('./patients').default;
+        return <PatientsPage />;
+      }
+      if (pathname === '/referral') {
+        const ReferralPage = require('./referral').default;
+        return <ReferralPage />;
+      }
+      const ClinicianDashboard = require('../components/clinician-dashboard').ClinicianDashboard;
+      return <ClinicianDashboard />;
     }
 
     switch (activeView) {
@@ -43,8 +65,6 @@ export default function Dashboard() {
         return <DashboardOverview />
       case "messages":
         return <Messages />
-      case "charts":
-        return <ChartsData />
       case "patients":
         return <PatientProfiles onSelectPatient={setSelectedPatient} setFilteredPatientCount={setFilteredPatientCount} />
       case "trimester-views":
@@ -64,9 +84,8 @@ export default function Dashboard() {
     }
   }
 
-  return (
-    <SharedLayout activeView={activeView} patientCount={filteredPatientCount}>
-      {renderContent()}
-    </SharedLayout>
-  )
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  if (!role) return null; // Let layout show the login page
+
+  return renderContent();
 }

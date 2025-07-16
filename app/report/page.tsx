@@ -1,7 +1,5 @@
 "use client";
 import { useState, useEffect } from "react";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "../../lib/firebase";
 import ReportList from "@/components/report";
 import SharedLayout from "@/components/shared-layout";
 
@@ -11,8 +9,8 @@ export default function ReportPage() {
   useEffect(() => {
     async function fetchPatientCount() {
       try {
-        const querySnapshot = await getDocs(collection(db, "ancRecords"));
-        setPatientCount(querySnapshot.size);
+        // Replace any Firestore usage with static dummy data or useState.
+        setPatientCount(100); // Example static count
       } catch (error) {
         console.error("Error fetching patient count:", error);
         setPatientCount(0);

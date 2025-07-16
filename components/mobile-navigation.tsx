@@ -4,7 +4,7 @@ import { BookOpen, Users, Clock, FileText, Bell, Heart, BarChart3, TrendingUp, X
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 
 interface MobileNavigationProps {
   isOpen: boolean
@@ -25,12 +25,6 @@ const menuItems = [
     icon: MessageSquare,
     id: "messages",
     description: "Patient messages and communications",
-  },
-  {
-    title: "Charts",
-    icon: BarChart3,
-    id: "charts",
-    description: "Analytics and data visualization",
   },
   {
     title: "Patient Profiles",
@@ -102,6 +96,36 @@ export function MobileNavigation({ isOpen, activeView, onViewChange, onClose }: 
     }
   }, [isOpen, onClose])
 
+  const [role, setRole] = useState('admin');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setRole(localStorage.getItem('userRole') || 'admin');
+    }
+  }, []);
+
+  const clinicianMenuItems = [
+    {
+      title: "Dashboard",
+      icon: BarChart3,
+      id: "dashboard",
+      description: "Overview and key metrics",
+    },
+    {
+      title: "Patients",
+      icon: Users,
+      id: "patients",
+      badge: "24",
+      description: "Manage patient information",
+    },
+    {
+      title: "Referral",
+      icon: FileText,
+      id: "referral",
+      description: "Patient referrals",
+    },
+  ];
+  const menu = role === 'clinician' ? clinicianMenuItems : menuItems;
+
   const handleItemClick = (itemId: string) => {
     onViewChange(itemId)
     onClose()
@@ -155,7 +179,7 @@ export function MobileNavigation({ isOpen, activeView, onViewChange, onClose }: 
         {/* Navigation Items */}
         <div className="max-h-[calc(100vh-120px)] overflow-y-auto">
           <div className="p-4 space-y-2">
-            {menuItems.map((item, index) => (
+            {menu.map((item, index) => (
               <button
                 key={item.id}
                 onClick={() => handleItemClick(item.id)}

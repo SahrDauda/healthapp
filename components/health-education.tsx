@@ -35,8 +35,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
-import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore"
-import { db } from "../lib/firebase"
+// Remove: import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp, deleteDoc } from "firebase/firestore"
+// Remove: import { db } from "../lib/firebase"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -133,59 +133,16 @@ export function HealthEducation() {
 
   const fetchPatients = async () => {
     try {
-      const querySnapshot = await getDocs(collection(db, "ancRecords"))
-      const fetchedPatients: Patient[] = []
-      
-      querySnapshot.forEach(docSnap => {
-        const data = docSnap.data()
-        const visit1 = data.visit1 || {}
-        const basicInfo = visit1.basicInfo || {}
-        const presentPregnancy = visit1.presentPregnancy || {}
-        
-        // Count visits
-        let visitCount = 0
-        for (let i = 1; i <= 8; i++) {
-          if (data[`visit${i}`] && Object.keys(data[`visit${i}`]).length > 0) {
-            visitCount++
-          }
-        }
-        
-        // Check if delivered
-        const hasDelivered = data.visitdelivery && Object.keys(data.visitdelivery).length > 0
-        
-        // Calculate current gestational age
-        const firstVisitGestationalAge = presentPregnancy.gestationalAge || 0
-        const firstVisitDate = presentPregnancy.dateOfAncContact ? new Date(presentPregnancy.dateOfAncContact.seconds * 1000) : null
-        let currentWeeks = firstVisitGestationalAge
-        
-        if (firstVisitDate) {
-          const today = new Date()
-          const weeksSinceFirstVisit = Math.floor((today.getTime() - firstVisitDate.getTime()) / (1000 * 60 * 60 * 24 * 7))
-          currentWeeks = firstVisitGestationalAge + weeksSinceFirstVisit
-        }
-        
-        // Determine trimester
-        let trimester = "Unknown"
-        if (currentWeeks <= 12) trimester = "1st Trimester"
-        else if (currentWeeks <= 27) trimester = "2nd Trimester"
-        else if (currentWeeks <= 40) trimester = "3rd Trimester"
-        else if (hasDelivered) trimester = "Delivered"
-        
-        fetchedPatients.push({
-          id: docSnap.id,
-          name: basicInfo.clientName || "Unknown",
-          weeks: currentWeeks,
-          trimester,
-          visitCount,
-          status: hasDelivered ? "Delivered" : "Active",
-          hasDelivered,
-          email: basicInfo.email,
-          phone: basicInfo.phoneNumber
-        })
-      })
-      
-      setPatients(fetchedPatients)
-      setFilteredPatients(fetchedPatients)
+      // Simulate fetching patients from a local state or dummy data
+      const dummyPatients: Patient[] = [
+        { id: "1", name: "Patient A", weeks: 10, trimester: "1st Trimester", visitCount: 1, status: "Active", hasDelivered: false, email: "patienta@example.com", phone: "123-456-7890" },
+        { id: "2", name: "Patient B", weeks: 20, trimester: "2nd Trimester", visitCount: 2, status: "Active", hasDelivered: false, email: "patientb@example.com", phone: "987-654-3210" },
+        { id: "3", name: "Patient C", weeks: 30, trimester: "3rd Trimester", visitCount: 3, status: "Active", hasDelivered: false, email: "patientc@example.com", phone: "112-358-1321" },
+        { id: "4", name: "Patient D", weeks: 35, trimester: "Delivery", visitCount: 4, status: "Active", hasDelivered: false, email: "patientd@example.com", phone: "456-789-0123" },
+        { id: "5", name: "Patient E", weeks: 40, trimester: "Delivery", visitCount: 5, status: "Active", hasDelivered: false, email: "patiente@example.com", phone: "789-012-3456" },
+      ];
+      setPatients(dummyPatients);
+      setFilteredPatients(dummyPatients);
     } catch (error) {
       console.error("Error fetching patients:", error)
     } finally {
@@ -195,67 +152,20 @@ export function HealthEducation() {
 
   const fetchHealthTips = async () => {
     try {
-      const healthTipsSnap = await getDocs(collection(db, "health-tips"));
-      const nutritionTipsSnap = await getDocs(collection(db, "nutrition-tips"));
-      const healthVideosSnap = await getDocs(collection(db, "health-videos"));
-
-      console.log('health-tips count:', healthTipsSnap.size, healthTipsSnap.docs.map(doc => doc.id));
-      console.log('nutrition-tips count:', nutritionTipsSnap.size, nutritionTipsSnap.docs.map(doc => doc.id));
-      console.log('health-videos count:', healthVideosSnap.size, healthVideosSnap.docs.map(doc => doc.id));
-      console.log('health-tips data:', healthTipsSnap.docs.map(doc => doc.data()));
-      console.log('nutrition-tips data:', nutritionTipsSnap.docs.map(doc => doc.data()));
-      console.log('health-videos data:', healthVideosSnap.docs.map(doc => doc.data()));
-
-      setHealthTipsCount(healthTipsSnap.size);
-      setNutritionTipsCount(nutritionTipsSnap.size);
-      setHealthVideosCount(healthVideosSnap.size);
-
-      const healthTipsArr = healthTipsSnap.docs.map(doc => ({
-        id: doc.id,
-        title: doc.data().title || '',
-        content: doc.data().content || '',
-        category: 'health' as const,
-        targetStage: doc.data().targetStage || '',
-        targetWeeks: doc.data().targetWeeks || [],
-        targetVisits: doc.data().targetVisits || [],
-        createdAt: doc.data().createdAt || new Date(),
-        sentCount: doc.data().sentCount || 0,
-        isActive: doc.data().isActive !== undefined ? doc.data().isActive : true,
-        weeks: doc.data().weeks,
-        categoryType: doc.data().categoryType || '',
-      }));
-      const nutritionTipsArr = nutritionTipsSnap.docs.map(doc => ({
-        id: doc.id,
-        title: doc.data().title || '',
-        content: doc.data().content || '',
-        category: 'nutrition' as const,
-        targetStage: doc.data().targetStage || '',
-        targetWeeks: doc.data().targetWeeks || [],
-        targetVisits: doc.data().targetVisits || [],
-        createdAt: doc.data().createdAt || new Date(),
-        sentCount: doc.data().sentCount || 0,
-        isActive: doc.data().isActive !== undefined ? doc.data().isActive : true,
-        weeks: doc.data().weeks,
-        nutritionType: doc.data().nutritionType || '',
-      }));
-      const healthVideosArr = healthVideosSnap.docs.map(doc => ({
-        id: doc.id,
-        title: doc.data().title || '',
-        content: doc.data().content || '',
-        category: 'video' as const,
-        targetStage: doc.data().targetStage || '',
-        targetWeeks: doc.data().targetWeeks || [],
-        targetVisits: doc.data().targetVisits || [],
-        createdAt: doc.data().createdAt || new Date(),
-        sentCount: doc.data().sentCount || 0,
-        isActive: doc.data().isActive !== undefined ? doc.data().isActive : true,
-        weeks: doc.data().weeks
-      }));
-      setHealthTips([
-        ...healthTipsArr,
-        ...nutritionTipsArr,
-        ...healthVideosArr,
-      ]);
+      // Simulate fetching tips from a local state or dummy data
+      const dummyHealthTips: HealthTip[] = [
+        { id: "1", title: "Health Tip 1", content: "This is a health tip content 1.", category: "health", targetStage: "first-trimester", targetWeeks: [5, 10], createdAt: new Date(), sentCount: 10, isActive: true, weeks: "5,10", categoryType: "General Health" },
+        { id: "2", title: "Health Tip 2", content: "This is a health tip content 2.", category: "health", targetStage: "second-trimester", targetWeeks: [15, 20], createdAt: new Date(), sentCount: 20, isActive: true, weeks: "15,20", categoryType: "Physical Health" },
+        { id: "3", title: "Health Tip 3", content: "This is a health tip content 3.", category: "health", targetStage: "third-trimester", targetWeeks: [25, 30], createdAt: new Date(), sentCount: 30, isActive: true, weeks: "25,30", categoryType: "Mental Health" },
+        { id: "4", title: "Nutrition Tip 1", content: "This is a nutrition tip content 1.", category: "nutrition", targetStage: "first-trimester", targetWeeks: [5], createdAt: new Date(), sentCount: 10, isActive: true, weeks: "5", nutritionType: "Pregnancy Nutrition" },
+        { id: "5", title: "Nutrition Tip 2", content: "This is a nutrition tip content 2.", category: "nutrition", targetStage: "second-trimester", targetWeeks: [15], createdAt: new Date(), sentCount: 20, isActive: true, weeks: "15", nutritionType: "Snacks" },
+        { id: "6", title: "Health Video 1", content: "This is a health video content 1.", category: "video", targetStage: "first-trimester", targetWeeks: [5], createdAt: new Date(), sentCount: 10, isActive: true, weeks: "5" },
+        { id: "7", title: "Health Video 2", content: "This is a health video content 2.", category: "video", targetStage: "second-trimester", targetWeeks: [15], createdAt: new Date(), sentCount: 20, isActive: true, weeks: "15" },
+      ];
+      setHealthTips(dummyHealthTips);
+      setHealthTipsCount(dummyHealthTips.length);
+      setNutritionTipsCount(dummyHealthTips.filter(t => t.category === "nutrition").length);
+      setHealthVideosCount(dummyHealthTips.filter(t => t.category === "video").length);
     } catch (error) {
       alert("Error fetching tips: " + (error as any).message);
     }
@@ -301,43 +211,38 @@ export function HealthEducation() {
   };
 
   const handleCreateTip = async () => {
-    let collectionName = "health-tips";
-    if (createTipType === "nutrition") collectionName = "nutrition-tips";
-    if (createTipType === "video") collectionName = "health-videos";
-    const weeks = tipWeeks === "any" ? null : tipWeeks;
-    const trimester = tipTrimester === "any" ? null : tipTrimester;
-    const visit = tipVisit === "any" ? null : tipVisit;
-    const newTip = {
+    // Always provide all required HealthTip fields
+    const baseTip: HealthTip = {
+      id: editTipId || Date.now().toString(),
       title: tipTitle,
       content: tipContent,
-      category: createTipType,
-      weeks,
-      trimester,
-      visit,
-      schedule: tipScheduleDate,
+      category: (createTipType as "health" | "nutrition" | "video") || "health",
+      targetStage: (tipTrimester as HealthTip["targetStage"]) || "first-trimester",
+      targetWeeks: tipWeeks && tipWeeks !== "any" ? [Number(tipWeeks)] : [],
+      targetVisits: tipVisit && tipVisit !== "any" ? [Number(tipVisit)] : [],
+      createdAt: new Date(),
+      sentCount: 0,
       isActive: true,
-      ...(createTipType === 'health' && { categoryType }),
-      ...(createTipType === 'nutrition' && { nutritionType }),
+      weeks: tipWeeks || "",
+      categoryType: createTipType === 'health' ? categoryType : undefined,
+      nutritionType: createTipType === 'nutrition' ? nutritionType : undefined,
     };
     try {
       if (editTipId) {
-        await updateDoc(doc(db, collectionName, editTipId), {
-          ...newTip,
-          updatedAt: serverTimestamp(),
-          updatedBy: currentUserId,
-        });
+        // Simulate update
+        const updatedTips = healthTips.map(tip =>
+          tip.id === editTipId ? { ...tip, ...baseTip } : tip
+        );
+        setHealthTips(updatedTips);
         alert("Tip updated!");
       } else {
-        await addDoc(collection(db, collectionName), {
-          ...newTip,
-          createdAt: serverTimestamp(),
-          createdBy: currentUserId,
-        });
-        alert("Tip created and saved to Firestore!");
+        // Simulate add
+        setHealthTips(prev => [...prev, baseTip]);
+        alert("Tip created and saved to local state!");
       }
       setIsCreateModalOpen(false);
       setEditTipId(null);
-      fetchHealthTips();
+      fetchHealthTips(); // Re-fetch to update counts
     } catch (error) {
       alert("Error saving tip: " + (error as any).message);
     }
@@ -349,9 +254,11 @@ export function HealthEducation() {
     if (tip.category === "nutrition") collectionName = "nutrition-tips";
     if (tip.category === "video") collectionName = "health-videos";
     try {
-      await deleteDoc(doc(db, collectionName, tip.id));
+      // Simulate delete
+      const updatedTips = healthTips.filter(t => t.id !== tip.id);
+      setHealthTips(updatedTips);
       alert("Tip deleted!");
-      fetchHealthTips();
+      fetchHealthTips(); // Re-fetch to update counts
     } catch (error) {
       alert("Error deleting tip: " + (error as any).message);
     }

@@ -27,10 +27,9 @@ import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Slider } from "@/components/ui/slider"
 import { useIsMobile } from "@/hooks/use-mobile"
-import { collection, getDocs } from "firebase/firestore"
-import { db } from "../lib/firebase"
 import { useRouter } from "next/navigation"
 import { PatientDetail } from "@/components/patient-detail"
+import { toFhirPatient, toFhirEncounter } from "../lib/fhir-resources"
 
 interface PatientProfilesProps {
   onSelectPatient: (patientId: string) => void
@@ -102,6 +101,28 @@ function calculateNextAppointmentFromData(data: any) {
   return { date: nextDate, label: nextContact.label, contact: nextContact.contact };
 }
 
+const calculateAge = (birthDate: string) => {
+  if (!birthDate) return 0;
+  const birth = new Date(birthDate);
+  const today = new Date();
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+    age--;
+  }
+  return age;
+};
+
+const getTrimester = (weeks: number) => {
+  if (weeks < 13) return "1st";
+  if (weeks < 27) return "2nd";
+  if (weeks < 41) return "3rd";
+  return "Postpartum";
+};
+
+const defaultAppointments = 8;
+const todayStr = new Date().toISOString();
+
 export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: PatientProfilesProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedPatient, setSelectedPatient] = useState<(typeof patients)[0] | null>(null)
@@ -110,9 +131,130 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
   const [sortBy, setSortBy] = useState("name")
   const [sortOrder, setSortOrder] = useState("asc")
   const isMobile = useIsMobile()
-  const [patients, setPatients] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [patients, setPatients] = useState([
+    {
+      id: "1",
+      clientNumber: "001",
+      clientName: "Marie Kamara",
+      name: "Marie Kamara",
+      gender: "female",
+      birthDate: "1990-02-15",
+      age: calculateAge("1990-02-15"),
+      phoneNumber: "1234567890",
+      phone: "1234567890",
+      email: "marie.kamara@example.com",
+      address: "123 Main St",
+      emergencyContact: "Jane Doe",
+      emergencyPhone: "555-1234",
+      riskLevel: "Medium",
+      status: "Active",
+      weeks: 36,
+      trimester: getTrimester(36),
+      dueDate: "2024-02-15",
+      visitCount: 6,
+      totalAppointments: defaultAppointments,
+      lastVisit: todayStr,
+      nextAppointment: todayStr,
+      nextAppointmentLabel: "38–40 weeks",
+      bloodType: "O+"
+    },
+    {
+      id: "2",
+      clientNumber: "002",
+      clientName: "Emmanuella Turay",
+      name: "Emmanuella Turay",
+      gender: "female",
+      birthDate: "1992-03-20",
+      age: calculateAge("1992-03-20"),
+      phoneNumber: "2345678901",
+      phone: "2345678901",
+      email: "emmanuella.turay@example.com",
+      address: "456 Elm St",
+      emergencyContact: "John Doe",
+      emergencyPhone: "555-2345",
+      riskLevel: "Low",
+      status: "Active",
+      weeks: 24,
+      trimester: getTrimester(24),
+      dueDate: "2024-03-20",
+      visitCount: 4,
+      totalAppointments: defaultAppointments,
+      lastVisit: todayStr,
+      nextAppointment: todayStr,
+      nextAppointmentLabel: "26 weeks",
+      bloodType: "A+"
+    },
+    {
+      id: "3",
+      clientNumber: "003",
+      clientName: "Sarah Conteh",
+      name: "Sarah Conteh",
+      gender: "female",
+      birthDate: "1995-04-10",
+      age: calculateAge("1995-04-10"),
+      phoneNumber: "3456789012",
+      phone: "3456789012",
+      email: "sarah.conteh@example.com",
+      address: "789 Oak St",
+      emergencyContact: "Mary Smith",
+      emergencyPhone: "555-3456",
+      riskLevel: "Low",
+      status: "Active",
+      weeks: 12,
+      trimester: getTrimester(12),
+      dueDate: "2024-04-10",
+      visitCount: 2,
+      totalAppointments: defaultAppointments,
+      lastVisit: todayStr,
+      nextAppointment: todayStr,
+      nextAppointmentLabel: "13–16 weeks",
+      bloodType: "B+"
+    },
+    {
+      id: "4",
+      clientNumber: "004",
+      clientName: "Clara Deen",
+      name: "Clara Deen",
+      gender: "female",
+      birthDate: "1998-04-25",
+      age: calculateAge("1998-04-25"),
+      phoneNumber: "4567890123",
+      phone: "4567890123",
+      email: "clara.deen@example.com",
+      address: "321 Pine St",
+      emergencyContact: "Paul Jones",
+      emergencyPhone: "555-4567",
+      riskLevel: "Low",
+      status: "Active",
+      weeks: 8,
+      trimester: getTrimester(8),
+      dueDate: "2024-04-25",
+      visitCount: 1,
+      totalAppointments: defaultAppointments,
+      lastVisit: todayStr,
+      nextAppointment: todayStr,
+      nextAppointmentLabel: "13–16 weeks",
+      bloodType: "AB+"
+    }
+  ])
+  const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [newPatient, setNewPatient] = useState({
+    clientNumber: "",
+    clientName: "",
+    gender: "female",
+    birthDate: "",
+    phoneNumber: "",
+    address: "",
+    emergencyContact: "",
+    dueDate: "",
+    email: "",
+    emergencyPhone: ""
+  })
+  const [adding, setAdding] = useState(false)
+  const [addError, setAddError] = useState("")
+  const [dateDisplays, setDateDisplays] = useState<{[id: string]: {dueDate: string, lastVisit: string, nextAppointment: string}}>({})
 
   // Filter state
   const [filters, setFilters] = useState<FilterState>({
@@ -136,74 +278,7 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
     { value: "gt", label: "Greater than" },
   ]
 
-  useEffect(() => {
-    async function fetchPatients() {
-      setLoading(true)
-      try {
-        const querySnapshot = await getDocs(collection(db, "ancRecords"))
-        const fetchedPatients: any[] = []
-        querySnapshot.forEach(docSnap => {
-          const data = docSnap.data()
-          // Count visits
-          let visitCount = 0
-          let lastVisitDate = null
-          let lastVisitTimestamp = null
-          for (let i = 1; i <= 8; i++) {
-            const visit = data[`visit${i}`]
-            if (visit) {
-              visitCount++
-              if (visit.updatedAt) {
-                const ts = visit.updatedAt.toDate ? visit.updatedAt.toDate() : new Date(visit.updatedAt)
-                if (!lastVisitTimestamp || ts > lastVisitTimestamp) {
-                  lastVisitTimestamp = ts
-                  lastVisitDate = ts
-                }
-              }
-            }
-          }
-          const visit1 = data.visit1 || {}
-          const basicInfo = visit1.basicInfo || {}
-          const presentPregnancy = visit1.presentPregnancy || {}
-          // Get latest visit info
-          const { latestVisitNum, latestDate, latestGA } = getLatestVisitInfo(data);
-          const next = calculateNextAppointmentFromData(data);
-          fetchedPatients.push({
-            id: docSnap.id,
-            clientName: basicInfo.clientName || "",
-            age: basicInfo.age || "",
-            phoneNumber: basicInfo.phoneNumber || "",
-            email: basicInfo.email || "",
-            pregnancyWeeks: latestGA || "",
-            trimester: presentPregnancy.trimester || "",
-            dueDate: presentPregnancy.dueDate || "",
-            status: basicInfo.status || "Active",
-            lastVisit: latestDate ? latestDate.toISOString().split("T")[0] : "",
-            nextAppointment: next ? next.date.toISOString().split("T")[0] : "",
-            nextAppointmentLabel: next ? `${next.label} (Contact ${next.contact})` : "All contacts complete",
-            riskLevel: basicInfo.riskLevel || "",
-            bloodType: basicInfo.bloodType || "",
-            visitCount: latestVisitNum,
-            totalAppointments: 8,
-            address: basicInfo.address || "",
-            emergencyContact: basicInfo.emergencyContact || "",
-            emergencyPhone: basicInfo.emergencyPhone || "",
-          })
-        })
-        const patientsWithNext = fetchedPatients.map((p) => {
-          const next = calculateNextAppointmentFromData(p);
-          return {
-            ...p,
-            nextAppointment: next ? next.date.toISOString().split("T")[0] : "",
-            nextAppointmentLabel: next ? `${next.label} (Contact ${next.contact})` : "All contacts complete",
-          };
-        });
-        setPatients(patientsWithNext)
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchPatients()
-  }, [])
+  // Remove useEffect that fetches from Firestore
 
   // Calculate statistics with current filters
   const filteredPatients = useMemo(() => {
@@ -435,11 +510,11 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
             {patient.status === "Active" && (
               <div className="mt-3 p-2 bg-blue-50 rounded-lg">
                 <div className="text-sm">
-                  <span className="font-medium">{patient.gestationalAge}</span>
+                  <span className="font-medium">{patient.weeks}</span>
                   <span className="text-muted-foreground"> ({patient.trimester})</span>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Due: {new Date(patient.dueDate).toLocaleDateString()}
+                  Due: {dateDisplays[patient.id]?.dueDate}
                 </div>
               </div>
             )}
@@ -448,7 +523,7 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
               <span>
                 Visits: {patient.visitCount}/{patient.totalAppointments}
               </span>
-              <span>Last: {new Date(patient.lastVisit).toLocaleDateString()}</span>
+              <span>Last: {dateDisplays[patient.id]?.lastVisit}</span>
             </div>
           </div>
         </div>
@@ -462,6 +537,74 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
     }
   }, [filteredPatients, setFilteredPatientCount])
 
+  useEffect(() => {
+    // After hydration, format all patient dates for display
+    const displays: {[id: string]: {dueDate: string, lastVisit: string, nextAppointment: string}} = {}
+    patients.forEach(p => {
+      displays[p.id] = {
+        dueDate: p.dueDate ? new Date(p.dueDate).toLocaleDateString() : '',
+        lastVisit: p.lastVisit ? new Date(p.lastVisit).toLocaleDateString() : '',
+        nextAppointment: p.nextAppointment ? new Date(p.nextAppointment).toLocaleDateString() : ''
+      }
+    })
+    setDateDisplays(displays)
+  }, [patients])
+
+  // Add New Patient Handler
+  const handleAddPatient = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setAdding(true)
+    setAddError("")
+    try {
+      if (!newPatient.clientNumber || !newPatient.clientName || !newPatient.birthDate) {
+        setAddError("Client number, name, and birth date are required.")
+        setAdding(false)
+        return
+      }
+      const age = calculateAge(newPatient.birthDate)
+      const weeks = 0
+      const trimester = getTrimester(weeks)
+      setPatients(prev => [
+        {
+          id: (prev.length + 1).toString(),
+          ...newPatient,
+          name: newPatient.clientName,
+          age,
+          phone: newPatient.phoneNumber,
+          email: newPatient.email || "new.patient@example.com",
+          riskLevel: "Low",
+          status: "Active",
+          weeks,
+          trimester,
+          dueDate: newPatient.dueDate || "",
+          visitCount: 0,
+          totalAppointments: defaultAppointments,
+          lastVisit: todayStr,
+          nextAppointment: todayStr,
+          nextAppointmentLabel: "13–16 weeks",
+          bloodType: "O+",
+          emergencyPhone: newPatient.emergencyPhone || "555-0000"
+        },
+        ...prev
+      ])
+      setIsAddModalOpen(false)
+      setNewPatient({
+        clientNumber: "",
+        clientName: "",
+        gender: "female",
+        birthDate: "",
+        phoneNumber: "",
+        address: "",
+        emergencyContact: "",
+        dueDate: "",
+        email: "",
+        emergencyPhone: ""
+      })
+    } finally {
+      setAdding(false)
+    }
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -471,8 +614,58 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
             Manage maternal health records and patient information
           </p>
         </div>
-        {/* <Button className="w-full sm:w-auto">Add New Patient</Button> */}
+        <Button className="w-full sm:w-auto" onClick={() => setIsAddModalOpen(true)}>Add New Patient</Button>
       </div>
+      {/* Add Patient Modal */}
+      <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
+        <DialogContent className="max-w-md w-full">
+          <DialogHeader>
+            <DialogTitle>Add New Patient</DialogTitle>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleAddPatient}>
+            <div>
+              <label className="block text-sm font-medium mb-1">Client Number *</label>
+              <Input value={newPatient.clientNumber} onChange={e => setNewPatient(p => ({ ...p, clientNumber: e.target.value }))} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Full Name *</label>
+              <Input value={newPatient.clientName} onChange={e => setNewPatient(p => ({ ...p, clientName: e.target.value }))} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Gender</label>
+              <Select value={newPatient.gender} onValueChange={val => setNewPatient(p => ({ ...p, gender: val }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Birth Date *</label>
+              <Input type="date" value={newPatient.birthDate} onChange={e => setNewPatient(p => ({ ...p, birthDate: e.target.value }))} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Phone</label>
+              <Input value={newPatient.phoneNumber} onChange={e => setNewPatient(p => ({ ...p, phoneNumber: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Address</label>
+              <Input value={newPatient.address} onChange={e => setNewPatient(p => ({ ...p, address: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Emergency Contact</label>
+              <Input value={newPatient.emergencyContact} onChange={e => setNewPatient(p => ({ ...p, emergencyContact: e.target.value }))} />
+            </div>
+            {addError && <div className="text-red-600 text-sm">{addError}</div>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsAddModalOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={adding}>{adding ? "Adding..." : "Add Patient"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Statistics Cards */}
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
@@ -702,14 +895,14 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
                           <Badge variant={getStatusColor(patient.status) as any}>{patient.status}</Badge>
                           {patient.status === "Active" && (
                             <span className="text-sm text-muted-foreground">
-                              {patient.gestationalAge} ({patient.trimester})
+                              {patient.weeks} ({patient.trimester})
                             </span>
                           )}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm">
-                          <div>{new Date(patient.dueDate).toLocaleDateString()}</div>
+                          <div>{dateDisplays[patient.id]?.dueDate}</div>
                           {patient.status === "Active" && (
                             <div className="text-muted-foreground">
                               {calculateWeeksRemaining(patient.dueDate)} weeks left
@@ -730,10 +923,10 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm">{new Date(patient.lastVisit).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-sm">{dateDisplays[patient.id]?.lastVisit}</TableCell>
                       <TableCell className="text-sm">
                         {patient.nextAppointment
-                          ? `${new Date(patient.nextAppointment).toLocaleDateString()} (${patient.nextAppointmentLabel})`
+                          ? `${dateDisplays[patient.id]?.nextAppointment} (${patient.nextAppointmentLabel})`
                           : "All contacts complete"}
                       </TableCell>
                     </TableRow>
@@ -962,9 +1155,9 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
               <div><span className="font-medium">Email:</span> {selectedPatient.email}</div>
               <div><span className="font-medium">Risk Level:</span> <Badge variant={getRiskColor(selectedPatient.riskLevel) as any}>{selectedPatient.riskLevel || 'No Risk'}</Badge></div>
               <div><span className="font-medium">Status:</span> <Badge variant={getStatusColor(selectedPatient.status) as any}>{selectedPatient.status}</Badge></div>
-              <div><span className="font-medium">Gestational Age:</span> {selectedPatient.pregnancyWeeks} weeks</div>
-              <div><span className="font-medium">Last Visit:</span> {selectedPatient.lastVisit ? new Date(selectedPatient.lastVisit).toLocaleDateString() : 'N/A'}</div>
-              <div><span className="font-medium">Next Appointment:</span> {selectedPatient.nextAppointment ? `${new Date(selectedPatient.nextAppointment).toLocaleDateString()} (${selectedPatient.nextAppointmentLabel})` : 'All contacts complete'}</div>
+              <div><span className="font-medium">Gestational Age:</span> {selectedPatient.weeks} weeks</div>
+              <div><span className="font-medium">Last Visit:</span> {dateDisplays[selectedPatient.id]?.lastVisit}</div>
+              <div><span className="font-medium">Next Appointment:</span> {dateDisplays[selectedPatient.id]?.nextAppointment} ({selectedPatient.nextAppointmentLabel})</div>
             </div>
           )}
 
@@ -1021,7 +1214,7 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
                     {selectedPatient.status === "Active" && (
                       <div className="text-sm space-y-1">
                         <p>
-                          <span className="font-medium">Weeks:</span> {selectedPatient.pregnancyWeeks}
+                          <span className="font-medium">Weeks:</span> {selectedPatient.weeks}
                         </p>
                         <p>
                           <span className="font-medium">Trimester:</span> {selectedPatient.trimester}
@@ -1032,7 +1225,7 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
                   <div className="text-sm space-y-1">
                     <p>
                       <span className="font-medium">Due Date:</span>{" "}
-                      {new Date(selectedPatient.dueDate).toLocaleDateString()}
+                      {dateDisplays[selectedPatient.id]?.dueDate}
                     </p>
                     {selectedPatient.status === "Active" && (
                       <p>
@@ -1074,15 +1267,13 @@ export function PatientProfiles({ onSelectPatient, setFilteredPatientCount }: Pa
                   <div>
                     <p>
                       <span className="font-medium">Last Visit:</span>{" "}
-                      {new Date(selectedPatient.lastVisit).toLocaleDateString()}
+                      {dateDisplays[selectedPatient.id]?.lastVisit}
                     </p>
                   </div>
                   <div>
                     <p>
                       <span className="font-medium">Next Appointment:</span>{" "}
-                      {selectedPatient.nextAppointment
-                        ? `${new Date(selectedPatient.nextAppointment).toLocaleDateString()} (${selectedPatient.nextAppointmentLabel})`
-                        : "All contacts complete"}
+                      {dateDisplays[selectedPatient.id]?.nextAppointment} ({selectedPatient.nextAppointmentLabel})
                     </p>
                   </div>
                 </div>

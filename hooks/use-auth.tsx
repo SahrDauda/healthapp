@@ -1,20 +1,23 @@
 import { useState, useEffect } from 'react';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 
-export function useAuth() {
-  const [user, setUser] = useState<User | null>(null); // ✅ Type annotation here
+export function useLocalAuth() {
+  const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const auth = getAuth();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser); // ✅ Now valid
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [auth]);
+    const storedRole = typeof window !== 'undefined' ? localStorage.getItem('userRole') : null;
+    setRole(storedRole);
+    setLoading(false);
+  }, []);
 
-  return { user, loading };
+  const logout = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('userRole');
+      setRole(null);
+    }
+  };
+
+  return { role, loading, logout };
 }
 
 export function useIsMobile() {

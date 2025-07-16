@@ -7,7 +7,6 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Loader2, CheckCircle, AlertCircle } from "lucide-react"
-import { updateFieldName } from "@/lib/firebase"
 
 export function FieldUpdater() {
   const [collectionName, setCollectionName] = useState("ancRecords")
@@ -26,8 +25,10 @@ export function FieldUpdater() {
     setResult(null)
 
     try {
-      const updateResult = await updateFieldName(collectionName, oldFieldName, newFieldName)
-      setResult(updateResult)
+      // Replace any Firestore usage with static dummy data or useState.
+      // For now, we'll simulate an update.
+      console.log(`Simulating update for collection: ${collectionName}, old field: ${oldFieldName}, new field: ${newFieldName}`);
+      setResult({ success: true, updatedCount: 1 }); // Simulate one document updated
     } catch (error) {
       setResult({ success: false, error: error instanceof Error ? error.message : "Unknown error" })
     } finally {

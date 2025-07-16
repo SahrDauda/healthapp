@@ -20,8 +20,6 @@ import {
 } from "recharts"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { useEffect, useState } from "react"
-import { collection, getDocs } from "firebase/firestore"
-import { db } from "../lib/firebase"
 
 // Sample data for charts
 const patientsByTrimester = [
@@ -65,26 +63,11 @@ const upcomingDueDates = [
 
 export function DashboardOverview() {
   const isMobile = useIsMobile()
-  const [totalPatients, setTotalPatients] = useState<number | null>(null)
-  const [loadingPatients, setLoadingPatients] = useState(true)
-
-  useEffect(() => {
-    async function fetchTotalPatients() {
-      setLoadingPatients(true)
-      try {
-        const querySnapshot = await getDocs(collection(db, "ancRecords"))
-        setTotalPatients(querySnapshot.size)
-      } catch (error) {
-        setTotalPatients(null)
-      } finally {
-        setLoadingPatients(false)
-      }
-    }
-    fetchTotalPatients()
-  }, [])
-
+  // Dummy data for metrics
+  const totalPatients = 30
+  const highRiskPatients = 4
+  const birthsThisMonth = 5
   const totalAppointmentsThisWeek = appointmentsThisWeek.reduce((sum, item) => sum + item.appointments, 0)
-  const highRiskPatients = riskLevels.find((level) => level.level === "High Risk")?.count || 0
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -103,7 +86,7 @@ export function DashboardOverview() {
             <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">{loadingPatients ? "..." : totalPatients ?? "-"}</div>
+            <div className="text-xl sm:text-2xl font-bold">{totalPatients}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-black flex items-center">
                 <TrendingUp className="h-3 w-3 mr-1" />
@@ -151,7 +134,7 @@ export function DashboardOverview() {
             <Baby className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground-white" />
           </CardHeader>
           <CardContent>
-            <div className="text-xl sm:text-2xl font-bold">0</div>
+            <div className="text-xl sm:text-2xl font-bold">{birthsThisMonth}</div>
             <p className="text-xs text-muted-foreground">
               <span className="text-black flex items-center">
                 <TrendingUp className="h-3 w-3 mr-1" />

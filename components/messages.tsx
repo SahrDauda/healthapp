@@ -12,8 +12,6 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { collection, getDocs, doc, addDoc, serverTimestamp, query, orderBy, onSnapshot, updateDoc } from "firebase/firestore"
-import { db } from "../lib/firebase"
 
 interface ChatSummary {
   id: string
@@ -52,27 +50,12 @@ export function Messages() {
     const fetchChats = async () => {
       setLoadingChats(true)
       try {
-        const chatsSnapshot = await getDocs(collection(db, "chats"))
-        const fetchedChats: ChatSummary[] = []
-        chatsSnapshot.forEach(docSnap => {
-          const data = docSnap.data()
-          fetchedChats.push({
-            id: docSnap.id,
-            userId: data.userId,
-            healthWorkerId: data.healthWorkerId,
-            lastMessage: data.lastMessage,
-            lastMessageTime: data.lastMessageTime,
-            createdAt: data.createdAt,
-            unreadCount: data.unreadCount || 0
-          })
-        })
-        // Sort by lastMessageTime (newest first)
-        fetchedChats.sort((a, b) => {
-          const tA = a.lastMessageTime?.toDate ? a.lastMessageTime.toDate() : new Date(a.lastMessageTime)
-          const tB = b.lastMessageTime?.toDate ? b.lastMessageTime.toDate() : new Date(b.lastMessageTime)
-          return tB.getTime() - tA.getTime()
-        })
-        setChats(fetchedChats)
+        // Use dummy data for chats
+        setChats([
+          { id: "chat1", userId: "Patient A", healthWorkerId: "Health Worker 1", lastMessage: "How are you feeling today?", lastMessageTime: new Date("2023-10-26T10:00:00Z"), createdAt: new Date("2023-10-26T09:00:00Z"), unreadCount: 2 },
+          { id: "chat2", userId: "Patient B", healthWorkerId: "Health Worker 2", lastMessage: "I'm feeling better now.", lastMessageTime: new Date("2023-10-26T11:00:00Z"), createdAt: new Date("2023-10-26T10:00:00Z"), unreadCount: 0 },
+          { id: "chat3", userId: "Patient C", healthWorkerId: "Health Worker 1", lastMessage: "Can you send me the report?", lastMessageTime: new Date("2023-10-26T12:00:00Z"), createdAt: new Date("2023-10-26T11:00:00Z"), unreadCount: 1 },
+        ])
       } catch (error) {
         console.error("Error fetching chats:", error)
       } finally {
@@ -85,25 +68,13 @@ export function Messages() {
   // Real-time messages for selected chat
   useEffect(() => {
     if (!selectedChat) return
-    const messagesRef = collection(db, "chats", selectedChat.id, "messages")
-    const q = query(messagesRef, orderBy("timestamp", "asc"))
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedMessages: MessageDoc[] = []
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data()
-        fetchedMessages.push({
-          id: docSnap.id,
-          senderId: data.senderId,
-          receiverId: data.receiverId,
-          text: data.text,
-          timestamp: data.timestamp
-        })
-      })
-      setMessages(fetchedMessages)
-      // Mark all as read (optional: only if admin is viewing)
-      updateDoc(doc(db, "chats", selectedChat.id), { unreadCount: 0 })
-    })
-    return () => unsubscribe()
+    // Use dummy data for messages
+    setMessages([
+      { id: "msg1", senderId: "health_worker", receiverId: "Patient A", text: "I'm feeling better now.", timestamp: new Date("2023-10-26T10:05:00Z") },
+      { id: "msg2", senderId: "Patient A", receiverId: "health_worker", text: "Great to hear that!", timestamp: new Date("2023-10-26T10:10:00Z") },
+      { id: "msg3", senderId: "Patient A", receiverId: "health_worker", text: "Can you send me the report?", timestamp: new Date("2023-10-26T10:15:00Z") },
+      { id: "msg4", senderId: "health_worker", receiverId: "Patient A", text: "Sure, I'll send it now.", timestamp: new Date("2023-10-26T10:20:00Z") },
+    ])
   }, [selectedChat])
 
   // Auto-scroll to bottom on new messages
@@ -117,24 +88,31 @@ export function Messages() {
     if (!selectedChat || !replyContent.trim()) return
     setSending(true)
     try {
-      const messagesRef = collection(db, "chats", selectedChat.id, "messages")
-      await addDoc(messagesRef, {
+      // Use dummy data for adding messages
+      setMessages(prevMessages => [...prevMessages, {
+        id: `msg${prevMessages.length + 1}`,
         senderId: "health_worker",
         receiverId: selectedChat.userId,
         text: replyContent,
-        timestamp: serverTimestamp(),
-        createdAt: serverTimestamp(),
-        createdBy: currentUserId,
-      })
+        timestamp: new Date(),
+      }])
       setReplyContent("")
       // Update lastMessage and lastMessageTime in chat summary
-      await updateDoc(doc(db, "chats", selectedChat.id), {
-        lastMessage: replyContent,
-        lastMessageTime: serverTimestamp(),
-        unreadCount: 0, // admin just sent
-        updatedAt: serverTimestamp(),
-        updatedBy: currentUserId,
-      })
+      // This part would typically involve a backend update, but for now, we'll just re-fetch or update locally
+      // For simplicity, we'll just re-fetch all chats to reflect the new message
+      setChats(prevChats => prevChats.map(chat => {
+        if (chat.id === selectedChat.id) {
+          return {
+            ...chat,
+            lastMessage: replyContent,
+            lastMessageTime: new Date(),
+            unreadCount: 0, // admin just sent
+            updatedAt: new Date(),
+            updatedBy: currentUserId,
+          }
+        }
+        return chat
+      }))
     } catch (error) {
       console.error("Error sending reply:", error)
     } finally {

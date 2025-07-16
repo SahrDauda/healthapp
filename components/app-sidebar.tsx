@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
 import { useEffect, useState } from "react"
-import { collection, getDocs, onSnapshot } from "firebase/firestore"
-import { db } from "../lib/firebase"
+import PatientsPage from "@/components/patients";
+import ReferralPage from "@/components/referral";
 
 interface AppSidebarProps {
   activeView: string
@@ -29,42 +29,66 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
   const [reportCount, setReportCount] = useState<number>(0);
   const [unreadReportCount, setUnreadReportCount] = useState<number>(0);
   const [unreadMessagesCount, setUnreadMessagesCount] = useState<number>(0);
+  const [role, setRole] = useState('admin');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setRole(localStorage.getItem('userRole') || 'admin');
+    }
+  }, []);
 
   useEffect(() => {
     // Real-time updates for unread messages count
-    const unsubscribe = db ? onSnapshot(collection(db, "chats"), (snapshot) => {
-      let totalUnread = 0;
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        totalUnread += data.unreadCount || 0;
-      });
-      setUnreadMessagesCount(totalUnread);
-    }) : undefined;
+    // const unsubscribe = db ? onSnapshot(collection(db, "chats"), (snapshot) => {
+    //   let totalUnread = 0;
+    //   snapshot.forEach(docSnap => {
+    //     const data = docSnap.data();
+    //     totalUnread += data.unreadCount || 0;
+    //   });
+    //   setUnreadMessagesCount(totalUnread);
+    // }) : undefined;
 
     // Other counts (notifications, reports) can remain as getDocs
-    const fetchCounts = async () => {
-      try {
-        // Fetch notification count
-        const notificationSnapshot = await getDocs(collection(db, "notifications"));
-        setNotificationCount(notificationSnapshot.size);
+    // const fetchCounts = async () => {
+    //   try {
+    //     // Fetch notification count
+    //     const notificationSnapshot = await getDocs(collection(db, "notifications"));
+    //     setNotificationCount(notificationSnapshot.size);
 
-        // Fetch report counts
-        const reportSnapshot = await getDocs(collection(db, "report"));
-        const reports = reportSnapshot.docs.map(doc => doc.data());
-        setReportCount(reports.length);
-        setUnreadReportCount(reports.filter((report: any) => !report.isRead).length);
-      } catch (error) {
-        console.error("Error fetching counts:", error);
-        setNotificationCount(0);
-        setReportCount(0);
-        setUnreadReportCount(0);
-      }
-    };
-    fetchCounts();
-    return () => { if (unsubscribe) unsubscribe(); };
+    //     // Fetch report counts
+    //     const reportSnapshot = await getDocs(collection(db, "report"));
+    //     const reports = reportSnapshot.docs.map(doc => doc.data());
+    //     setReportCount(reports.length);
+    //     setUnreadReportCount(reports.filter((report: any) => !report.isRead).length);
+    //   } catch (error) {
+    //     console.error("Error fetching counts:", error);
+    //     setNotificationCount(0);
+    //     setReportCount(0);
+    //     setUnreadReportCount(0);
+    //   }
+    // };
+    // fetchCounts();
+    // return () => { if (unsubscribe) unsubscribe(); };
   }, []);
 
-  const menuItems = [
+  const menuItems = role === 'clinician' ? [
+    {
+      title: "Dashboard",
+      icon: Home,
+      id: "dashboard",
+    },
+    {
+      title: "Patients",
+      icon: Users,
+      id: "patients",
+      badge: patientCount.toString(),
+    },
+    {
+      title: "Referral",
+      icon: FileText,
+      id: "referral",
+    },
+  ] : [
     {
       title: "Dashboard",
       icon: Home,
@@ -75,11 +99,6 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
       icon: MessageSquare,
       id: "messages",
       badge: unreadMessagesCount.toString(),
-    },
-    {
-      title: "Charts",
-      icon: BarChart3,
-      id: "charts",
     },
     {
       title: "Patients",
@@ -125,7 +144,7 @@ export function AppSidebar({ activeView, onViewChange, patientCount }: AppSideba
       icon: FileText,
       id: "records",
     },
-  ]
+  ];
 
   return (
     <Sidebar className="border-r border-gray-200 bg-white">

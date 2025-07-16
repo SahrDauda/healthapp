@@ -33,8 +33,6 @@ import {
   Paperclip
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
-import { collection, getDocs, Timestamp, doc, updateDoc, addDoc, getDoc } from "firebase/firestore";
-import { db } from "../lib/firebase";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { Separator } from "./ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
@@ -45,7 +43,7 @@ interface Report {
   id: string;
   clientName: string;
   clientNumber: string;
-  createdAt: Timestamp | null;
+  createdAt: string;
   description: string;
   facilityName: string;
   isAnonymous: boolean;
@@ -79,33 +77,74 @@ export default function ReportList() {
       setLoading(true);
       setError(null);
       try {
-        const snapshot = await getDocs(collection(db, "report"));
-        const fetched: Report[] = snapshot.docs.map(docSnap => {
-          const data = docSnap.data();
-          console.log('Raw Firestore data for report:', docSnap.id, data);
-          console.log('fileUrls field:', data.fileUrls);
-          console.log('fileUrls type:', typeof data.fileUrls);
-          console.log('fileUrls is array:', Array.isArray(data.fileUrls));
-          console.log('isRead field:', data.isRead);
-          console.log('isRead type:', typeof data.isRead);
-          return {
-            id: docSnap.id,
-            clientName: data.clientName || "-",
-            clientNumber: data.clientNumber || "-",
-            createdAt: data.createdAt || null,
-            description: data.description || "-",
-            facilityName: data.facilityName || "-",
-            isAnonymous: data.isAnonymous ?? true,
-            phoneNumber: data.phoneNumber || "-",
-            reportType: data.reportType || "-",
-            fileUrls: data.fileUrls || [],
-            isRead: data.isRead ?? false,
-            reply: data.reply,
-            replySentAt: data.replySentAt,
-            replySentBy: data.replySentBy,
-          };
-        });
-        setReports(fetched);
+        // Simulate fetching reports from a local state or dummy data
+        const dummyReports: Report[] = [
+          {
+            id: "1",
+            clientName: "John Doe",
+            clientNumber: "123456",
+            createdAt: "2023-10-26T10:00:00Z",
+            description: "I observed a nurse being rude to a patient. The patient was in a wheelchair and the nurse pushed it aggressively. This is unacceptable behavior.",
+            facilityName: "Hospital A",
+            isAnonymous: false,
+            phoneNumber: "123-456-7890",
+            reportType: "Complaint",
+            fileUrls: ["https://example.com/report1.pdf", "https://example.com/report2.docx"],
+            isRead: false,
+            reply: "Thank you for your report. We have received it and are investigating the incident. We will take appropriate action.",
+            replySentAt: "2023-10-26T10:30:00Z",
+            replySentBy: "admin"
+          },
+          {
+            id: "2",
+            clientName: "Jane Smith",
+            clientNumber: "789012",
+            createdAt: "2023-10-25T14:00:00Z",
+            description: "I found a patient's personal belongings left unattended in the waiting area. This is a security risk.",
+            facilityName: "Clinic B",
+            isAnonymous: true,
+            phoneNumber: "",
+            reportType: "Incident",
+            fileUrls: ["https://example.com/report3.jpg"],
+            isRead: true,
+            reply: "Thank you for your report. We have received it and are investigating the incident. We will take appropriate action.",
+            replySentAt: "2023-10-25T14:30:00Z",
+            replySentBy: "admin"
+          },
+          {
+            id: "3",
+            clientName: "Peter Jones",
+            clientNumber: "345678",
+            createdAt: "2023-10-24T09:00:00Z",
+            description: "I noticed a doctor prescribing medication without proper consultation. The patient was in pain and the doctor insisted on giving it.",
+            facilityName: "Hospital A",
+            isAnonymous: false,
+            phoneNumber: "987-654-3210",
+            reportType: "Feedback",
+            fileUrls: [],
+            isRead: true,
+            reply: "Thank you for your feedback. We have received it and are reviewing the doctor's conduct. We will ensure proper consultation in the future.",
+            replySentAt: "2023-10-24T09:30:00Z",
+            replySentBy: "admin"
+          },
+          {
+            id: "4",
+            clientName: "Anonymous",
+            clientNumber: "901234",
+            createdAt: "2023-10-23T11:00:00Z",
+            description: "I observed a staff member stealing patient belongings. This is a serious security breach.",
+            facilityName: "Clinic B",
+            isAnonymous: true,
+            phoneNumber: "",
+            reportType: "Incident",
+            fileUrls: ["https://example.com/report4.txt"],
+            isRead: false,
+            reply: "Thank you for your report. We have received it and are investigating the incident. We will take appropriate action.",
+            replySentAt: "2023-10-23T11:30:00Z",
+            replySentBy: "admin"
+          },
+        ];
+        setReports(dummyReports);
       } catch (err) {
         setError("Failed to fetch reports.");
       } finally {
@@ -152,21 +191,21 @@ Best regards,
 The HealthMama Support Team`;
 
       // Update Firebase - create isRead and reply fields
-      const reportRef = doc(db, "report", reportId);
-      console.log('Firebase document reference:', reportRef);
+      // const reportRef = doc(db, "report", reportId); // Removed Firebase
+      // console.log('Firebase document reference:', reportRef); // Removed Firebase
       
-      const updateData = {
-        isRead: true,
-        lastReadAt: new Date().toISOString(),
-        reply: responseMessage,
-        replySentAt: new Date().toISOString(),
-        replySentBy: "admin"
-      };
+      // const updateData = { // Removed Firebase
+      //   isRead: true,
+      //   lastReadAt: new Date().toISOString(),
+      //   reply: responseMessage,
+      //   replySentAt: new Date().toISOString(),
+      //   replySentBy: "admin"
+      // };
       
-      console.log('Creating/updating isRead and reply fields with data:', updateData);
-      await updateDoc(reportRef, updateData);
+      // console.log('Creating/updating isRead and reply fields with data:', updateData); // Removed Firebase
+      // await updateDoc(reportRef, updateData); // Removed Firebase
       
-      console.log('Successfully marked report as read and sent reply in Firebase');
+      // console.log('Successfully marked report as read and sent reply in Firebase'); // Removed Firebase
       
       // Show success notification
       const successMessage = `Report marked as read and response sent to ${report.isAnonymous ? 'Anonymous Reporter' : report.clientName}`;
@@ -184,13 +223,13 @@ The HealthMama Support Team`;
       
       // Show more specific error message
       let errorMessage = "Failed to mark report as read. Please try again.";
-      if (error.code === 'permission-denied') {
-        errorMessage = "Permission denied. Please update your Firestore security rules to allow write access to the 'report' collection. Go to Firebase Console → Firestore Database → Rules and add: allow read, write: if true;";
-      } else if (error.code === 'not-found') {
-        errorMessage = "Report not found. It may have been deleted.";
-      } else if (error.code === 'unavailable') {
-        errorMessage = "Network error. Please check your internet connection.";
-      }
+      // if (error.code === 'permission-denied') { // Removed Firebase
+      //   errorMessage = "Permission denied. Please update your Firestore security rules to allow write access to the 'report' collection. Go to Firebase Console → Firestore Database → Rules and add: allow read, write: if true;"; // Removed Firebase
+      // } else if (error.code === 'not-found') { // Removed Firebase
+      //   errorMessage = "Report not found. It may have been deleted."; // Removed Firebase
+      // } else if (error.code === 'unavailable') { // Removed Firebase
+      //   errorMessage = "Network error. Please check your internet connection."; // Removed Firebase
+      // }
       
       alert(errorMessage);
     }
@@ -206,18 +245,18 @@ The HealthMama Support Team`;
       ));
       
       // Update Firebase - create isRead field if it doesn't exist
-      const reportRef = doc(db, "report", reportId);
-      console.log('Firebase document reference:', reportRef);
+      // const reportRef = doc(db, "report", reportId); // Removed Firebase
+      // console.log('Firebase document reference:', reportRef); // Removed Firebase
       
-      const updateData = {
-        isRead: false,
-        lastReadAt: null
-      };
+      // const updateData = { // Removed Firebase
+      //   isRead: false,
+      //   lastReadAt: null
+      // };
       
-      console.log('Creating/updating isRead field with data:', updateData);
-      await updateDoc(reportRef, updateData);
+      // console.log('Creating/updating isRead field with data:', updateData); // Removed Firebase
+      // await updateDoc(reportRef, updateData); // Removed Firebase
       
-      console.log('Successfully marked report as unread in Firebase');
+      // console.log('Successfully marked report as unread in Firebase'); // Removed Firebase
     } catch (error: any) {
       console.error("Error marking report as unread:", error);
       console.error("Error code:", error.code);
@@ -230,13 +269,13 @@ The HealthMama Support Team`;
       
       // Show more specific error message
       let errorMessage = "Failed to mark report as unread. Please try again.";
-      if (error.code === 'permission-denied') {
-        errorMessage = "Permission denied. Please update your Firestore security rules to allow write access to the 'report' collection. Go to Firebase Console → Firestore Database → Rules and add: allow read, write: if true;";
-      } else if (error.code === 'not-found') {
-        errorMessage = "Report not found. It may have been deleted.";
-      } else if (error.code === 'unavailable') {
-        errorMessage = "Network error. Please check your internet connection.";
-      }
+      // if (error.code === 'permission-denied') { // Removed Firebase
+      //   errorMessage = "Permission denied. Please update your Firestore security rules to allow write access to the 'report' collection. Go to Firebase Console → Firestore Database → Rules and add: allow read, write: if true;"; // Removed Firebase
+      // } else if (error.code === 'not-found') { // Removed Firebase
+      //   errorMessage = "Report not found. It may have been deleted."; // Removed Firebase
+      // } else if (error.code === 'unavailable') { // Removed Firebase
+      //   errorMessage = "Network error. Please check your internet connection."; // Removed Firebase
+      // }
       
       alert(errorMessage);
     }
@@ -258,32 +297,31 @@ The HealthMama Support Team`;
       
       // Update each report
       for (const report of reportsToUpdate) {
-        const reportRef = doc(db, "report", report.id);
-        await updateDoc(reportRef, {
-          isRead: false
-        });
+        // const reportRef = doc(db, "report", report.id); // Removed Firebase
+        // await updateDoc(reportRef, { // Removed Firebase
+        //   isRead: false
+        // });
         console.log(`Initialized report ${report.id}`);
       }
       
       // Refresh the reports list
-      const snapshot = await getDocs(collection(db, "report"));
-      const fetched: Report[] = snapshot.docs.map(docSnap => {
-        const data = docSnap.data();
+      // const snapshot = await getDocs(collection(db, "report")); // Removed Firebase
+      const fetched: Report[] = reports.map(report => { // Use local state
         return {
-          id: docSnap.id,
-          clientName: data.clientName || "-",
-          clientNumber: data.clientNumber || "-",
-          createdAt: data.createdAt || null,
-          description: data.description || "-",
-          facilityName: data.facilityName || "-",
-          isAnonymous: data.isAnonymous ?? true,
-          phoneNumber: data.phoneNumber || "-",
-          reportType: data.reportType || "-",
-          fileUrls: data.fileUrls || [],
-          isRead: data.isRead ?? false,
-          reply: data.reply,
-          replySentAt: data.replySentAt,
-          replySentBy: data.replySentBy,
+          id: report.id,
+          clientName: report.clientName || "-",
+          clientNumber: report.clientNumber || "-",
+          createdAt: report.createdAt || "-",
+          description: report.description || "-",
+          facilityName: report.facilityName || "-",
+          isAnonymous: report.isAnonymous ?? true,
+          phoneNumber: report.phoneNumber || "-",
+          reportType: report.reportType || "-",
+          fileUrls: report.fileUrls || [],
+          isRead: report.isRead ?? false,
+          reply: report.reply,
+          replySentAt: report.replySentAt,
+          replySentBy: report.replySentBy,
         };
       });
       setReports(fetched);
@@ -378,9 +416,6 @@ The HealthMama Support Team`;
       filtered = filtered.filter(r => {
       const checkField = (key: keyof Report) => {
         const value = r[key];
-        if (key === 'createdAt' && value instanceof Timestamp) {
-          return value.toDate().toLocaleString().toLowerCase().includes(lower);
-        }
         if (typeof value === 'string') {
           return value.toLowerCase().includes(lower);
         }
@@ -416,7 +451,7 @@ The HealthMama Support Team`;
       
       // Sort by date (newest first)
       if (a.createdAt && b.createdAt) {
-        return b.createdAt.seconds - a.createdAt.seconds;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // Compare Date objects
       }
       return 0;
     });
@@ -462,14 +497,14 @@ The HealthMama Support Team`);
     setIsSendingReply(true);
     try {
       // Update the report document with the reply
-      const reportRef = doc(db, "report", replyingTo.id);
-      await updateDoc(reportRef, {
-        reply: replyMessage,
-        replySentAt: new Date().toISOString(),
-        replySentBy: "admin",
-        isRead: true,
-        lastReadAt: new Date().toISOString()
-      });
+      // const reportRef = doc(db, "report", replyingTo.id); // Removed Firebase
+      // await updateDoc(reportRef, { // Removed Firebase
+      //   reply: replyMessage,
+      //   replySentAt: new Date().toISOString(),
+      //   replySentBy: "admin",
+      //   isRead: true,
+      //   lastReadAt: new Date().toISOString()
+      // });
 
       // Update local state
       setReports(prev => prev.map(report => 
@@ -741,7 +776,7 @@ The HealthMama Support Team`);
                             <CalendarDays className="w-5 h-5 text-gray-400" />
                             <span className="text-base">
                               {report.createdAt 
-                                ? new Date(report.createdAt.seconds * 1000).toLocaleDateString('en-US', {
+                                ? new Date(report.createdAt).toLocaleDateString('en-US', {
                                     month: 'short',
                                     day: 'numeric',
                                     year: 'numeric'
@@ -1059,7 +1094,7 @@ The HealthMama Support Team`);
                     <p className="text-gray-900 font-medium flex items-center">
                       <CalendarDays className="h-4 w-4 mr-2 text-gray-400" />
                       {selectedReport.createdAt 
-                        ? new Date(selectedReport.createdAt.seconds * 1000).toLocaleString('en-US', {
+                        ? new Date(selectedReport.createdAt).toLocaleString('en-US', {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',

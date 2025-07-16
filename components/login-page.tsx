@@ -8,8 +8,6 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth"
-import { app } from "../lib/firebase"
 
 interface LoginPageProps {
   onLoginSuccess: () => void
@@ -31,8 +29,17 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [errors, setErrors] = useState<FormErrors>({})
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  // Remove role state and handleRoleChange
 
-  const auth = getAuth(app)
+  // Demo credentials for both roles
+  const demoCredentials = {
+    admin: { email: 'doctor@maternalcare.com', password: 'dauda2019' },
+    clinician: { email: 'clinician@maternalcare.com', password: 'clinician2024' },
+  };
+
+  // Remove role state and handleRoleChange
+
+  // Remove: const auth = getAuth(app)
 
   const validateEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
@@ -54,17 +61,35 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!validateForm()) return
-    setIsLoading(true)
-    setErrors({})
-    try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password)
-      onLoginSuccess()
-    } catch (error) {
-      setErrors({ general: "Invalid email or password. Please try again." })
-    } finally {
-      setIsLoading(false)
+    e.preventDefault();
+    if (!validateForm()) return;
+    setIsLoading(true);
+    setErrors({});
+    // Check which role matches the credentials
+    if (
+      formData.email === demoCredentials.admin.email &&
+      formData.password === demoCredentials.admin.password
+    ) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userRole', 'admin');
+        window.location.reload(); // Force reload to update app state
+      }
+      setIsLoading(false);
+      return;
+    } else if (
+      formData.email === demoCredentials.clinician.email &&
+      formData.password === demoCredentials.clinician.password
+    ) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userRole', 'clinician');
+        window.location.reload(); // Force reload to update app state
+      }
+      setIsLoading(false);
+      return;
+    } else {
+      setErrors({ general: 'Invalid email or password.' });
+      setIsLoading(false);
+      return;
     }
   }
 
@@ -138,6 +163,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </CardHeader>
             <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Remove Role Selector */}
                 {errors.general && (
                   <Alert variant="destructive" className="border-red-200 bg-red-50">
                     <AlertCircle className="h-4 w-4" />
@@ -241,10 +267,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   <div className="bg-gradient-to-r from-maternal-green-50 to-maternal-blue-50 p-3 sm:p-4 rounded-lg border border-maternal-green-200">
                     <div className="font-mono text-xs sm:text-sm text-maternal-brown-700 space-y-1">
                       <div>
-                        <span className="font-medium text-maternal-brown-600">Email:</span> doctor@maternalcare.com
+                        <span className="font-medium text-maternal-brown-600">APP Admin:</span> doctor@maternalcare.com / dauda2019
                       </div>
                       <div>
-                        <span className="font-medium text-maternal-brown-600">Password:</span> dauda2019
+                        <span className="font-medium text-maternal-brown-600">Clinician:</span> clinician@maternalcare.com / clinician2024
                       </div>
                     </div>
                   </div>

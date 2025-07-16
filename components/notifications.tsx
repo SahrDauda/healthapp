@@ -10,8 +10,6 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { db } from "../lib/firebase"
-import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp, query, orderBy, Timestamp } from "firebase/firestore"
 import { Toaster, toast } from 'sonner'
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
@@ -21,13 +19,14 @@ interface Notification {
   title: string;
   message: string;
   targetCategories: string[];
-  type: 'notification' | 'system_update' | 'emergency' ;
+  type: 'notification' | 'system_update' | 'emergency';
   status: 'sent' | 'pending' | 'delivered' | 'failed';
-  createdAt: Timestamp;
-  scheduledAt: Timestamp | null;
+  createdAt: string; // Changed from Timestamp to string for local data
+  scheduledAt: string | null; // Changed from Timestamp to string for local data
   trimester?: 'first' | 'second' | 'third' | 'all';
   visit?: number;
   weeks?: number;
+  isRead?: boolean; // <-- Add this line
 }
 
 export function Notifications() {
@@ -43,31 +42,57 @@ export function Notifications() {
   const [scheduleTime, setScheduleTime] = useState("")
 
   useEffect(() => {
-    fetchNotifications();
+    // Use local dummy data for notifications
+    const dummyNotifications: Notification[] = [
+      {
+        id: "1",
+        title: "Appointment Reminder",
+        message: "Don't forget your appointment tomorrow at 10 AM.",
+        targetCategories: ["all"],
+        type: "notification",
+        status: "sent",
+        createdAt: "2023-10-26T10:00:00Z",
+        scheduledAt: null,
+      },
+      {
+        id: "2",
+        title: "System Update Available",
+        message: "A new system update is available. Please restart your application.",
+        targetCategories: ["all"],
+        type: "system_update",
+        status: "pending",
+        createdAt: "2023-10-25T14:30:00Z",
+        scheduledAt: null,
+      },
+      {
+        id: "3",
+        title: "Emergency Alert",
+        message: "A critical system failure has been detected. Immediate action required.",
+        targetCategories: ["all"],
+        type: "emergency",
+        status: "failed",
+        createdAt: "2023-10-24T09:00:00Z",
+        scheduledAt: null,
+      },
+      {
+        id: "4",
+        title: "Monthly Checkup Reminder",
+        message: "Your monthly checkup is due next week. Please schedule an appointment.",
+        targetCategories: ["all"],
+        type: "notification",
+        status: "delivered",
+        createdAt: "2023-10-23T11:00:00Z",
+        scheduledAt: null,
+      },
+    ];
+    setNotifications(dummyNotifications);
+    setLoading(false);
   }, []);
   
-  const fetchNotifications = async () => {
-    setLoading(true);
-    try {
-      const q = query(collection(db, "notifications"), orderBy("createdAt", "desc"));
-      const querySnapshot = await getDocs(q);
-      const fetchedNotifications = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Notification));
-      setNotifications(fetchedNotifications);
-    } catch (err) {
-      console.error("Error fetching notifications:", err);
-      toast.error("Failed to fetch notifications.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this notification?")) return;
     try {
-      await deleteDoc(doc(db, "notifications", id));
+      // In a real app, you would delete from the backend
       setNotifications(notifications.filter(n => n.id !== id));
       toast.success("Notification deleted successfully.");
     } catch (error) {
@@ -89,27 +114,26 @@ export function Notifications() {
     setIsSubmitting(true);
     try {
       if(isNewNotification) {
-        const { id, ...newNotification } = selectedNotification;
-        const notificationData = {
-          ...newNotification,
-          createdAt: serverTimestamp(),
-          createdBy: "admin", // Replace with actual user ID from auth
-          isRead: false // Add isRead field
+        const newId = (Math.max(...notifications.map(n => parseInt(n.id))) + 1).toString();
+        const newNotification: Notification = {
+          ...selectedNotification,
+          id: newId,
+          createdAt: new Date().toISOString(),
+          // createdBy: "admin", // No backend, so no user ID
+          isRead: false, // Add isRead field
         };
-        await addDoc(collection(db, "notifications"), notificationData);
+        setNotifications([...notifications, newNotification]);
         toast.success("Notification created successfully.");
       } else {
-        const { id, createdAt, ...dataToUpdate } = selectedNotification;
-        await updateDoc(doc(db, "notifications", id), {
-          ...dataToUpdate,
-          updatedAt: serverTimestamp(),
-          updatedBy: "admin", // Replace with actual user ID from auth
-        });
+        const updatedNotifications = notifications.map(n =>
+          n.id === selectedNotification.id ? { ...selectedNotification, updatedAt: new Date().toISOString() } : n
+        );
+        setNotifications(updatedNotifications);
         toast.success("Notification updated successfully.");
       }
       
       setIsModalOpen(false);
-      fetchNotifications(); 
+      // In a real app, you would refetch or update the backend
     } catch (error) {
       console.error("Error saving notification:", error);
       toast.error("Failed to save notification.");
@@ -168,7 +192,7 @@ export function Notifications() {
               targetCategories: [],
               type: 'notification',
               status: 'pending',
-              createdAt: Timestamp.now(),
+              createdAt: new Date().toISOString(),
               scheduledAt: null,
             })
             setIsModalOpen(true)
@@ -231,7 +255,7 @@ export function Notifications() {
                     </Badge>
                   </TableCell>
                   <TableCell>{getStatusBadge(n.status)}</TableCell>
-                  <TableCell>{n.createdAt.toDate().toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(n.createdAt).toLocaleDateString()}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

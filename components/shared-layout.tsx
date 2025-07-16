@@ -2,8 +2,7 @@
 
 import React, { useState } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { getAuth, signOut } from "firebase/auth"
-import { useAuth } from "../hooks/use-auth"
+import { useLocalAuth } from "../hooks/use-auth";
 import { SidebarProvider } from "./ui/sidebar"
 import { AppSidebar } from "./app-sidebar"
 import { MobileNavigation } from "./mobile-navigation"
@@ -18,35 +17,34 @@ interface SharedLayoutProps {
 }
 
 export default function SharedLayout({ children, activeView: propActiveView, patientCount = 0 }: SharedLayoutProps) {
-  const { user, loading } = useAuth()
-  const router = useRouter()
-  const pathname = usePathname()
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const isMobile = useIsMobile()
+  const { role, loading, logout } = useLocalAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   // Determine active view from URL if not provided
-  const activeView = propActiveView || (pathname === "/report" ? "report" : "dashboard")
+  const activeView = propActiveView || (pathname === "/report" ? "report" : "dashboard");
 
   const handleLogout = () => {
-    const auth = getAuth()
-    signOut(auth).then(() => {
-      router.push("/")
-    }).catch((error) => {
-      console.error("Logout error:", error)
-    });
-  }
+    logout();
+    router.push("/");
+  };
 
   const handleViewChange = (view: string) => {
     if (view === "report") {
       router.push("/report");
+    } else if (view === "referral") {
+      router.push("/referral");
+    } else if (view === "patients") {
+      router.push("/patients");
     } else {
-      // For other views, navigate to main page with view parameter
       router.push(`/?view=${view}`);
     }
     if (isMobile) {
-      setIsMobileMenuOpen(false)
+      setIsMobileMenuOpen(false);
     }
-  }
+  };
 
   // Show loading spinner while checking authentication
   if (loading) {
@@ -57,12 +55,12 @@ export default function SharedLayout({ children, activeView: propActiveView, pat
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   // Show login page if not authenticated
-  if (!user) {
-    return <LoginPage onLoginSuccess={() => router.refresh()} />
+  if (!role) {
+    return <LoginPage onLoginSuccess={() => window.location.reload()} />;
   }
 
   // Mobile Layout
@@ -87,7 +85,7 @@ export default function SharedLayout({ children, activeView: propActiveView, pat
           </div>
         </main>
       </div>
-    )
+    );
   }
 
   // Desktop Layout
@@ -105,5 +103,5 @@ export default function SharedLayout({ children, activeView: propActiveView, pat
         </div>
       </div>
     </SidebarProvider>
-  )
+  );
 } 

@@ -8,12 +8,12 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { doc, getDoc } from "firebase/firestore"
-import { db } from "../lib/firebase"
+import { toFhirPatient, toFhirEncounter, toFhirObservation } from "../lib/fhir-resources";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface PatientDetailProps {
-  patientId: string
-  onBack: () => void
+  patient: any;
+  onBack: () => void;
 }
 
 // Move these to the top, before PatientDetail is defined
@@ -32,47 +32,109 @@ function getTrimesterForContact(contactNum: number) {
   return contactTrimesterMap[contactNum] || "-";
 }
 
-export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
-  const [patient, setPatient] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+
+const defaultPatient = {
+  visit1: {
+    basicInfo: {
+      clientName: "Jane Doe",
+      age: 28,
+      phoneNumber: "123-456-7890",
+      email: "jane.doe@example.com",
+      address: "123 Main St",
+      emergencyContact: "John Doe"
+    },
+    presentPregnancy: {
+      gestationalAge: 12,
+      dateOfAncContact: { seconds: Math.floor(Date.now() / 1000) },
+      bloodGroup: "O",
+      rhesusFactor: "+",
+      height: 165,
+      weight: 65
+    },
+    vitals: {
+      bloodPressure: "120/80",
+      weight: 65,
+      height: 165,
+      bmi: 24
+    },
+    pastPregnancyHistory: {
+      complications: ["None"]
+    }
+  },
+  visitdelivery: {},
+};
+
+export function PatientDetail({ patient, onBack }: PatientDetailProps) {
+  // Use the patient prop or fallback to defaultPatient
+  const safePatient = patient || defaultPatient;
+  // Remove duplicate useState for patient and all loading/error states
+  // Use the patient prop directly throughout the component
+  // Ensure all variables (dueDate, firstVisitDate, etc.) are declared before use and have proper types
   const [selectedVisit, setSelectedVisit] = useState<any>(null)
   const [showVisitModal, setShowVisitModal] = useState(false)
+  const [encounters, setEncounters] = useState<any[]>([])
+  const [encountersLoading, setEncountersLoading] = useState(true)
+  const [isAddVisitOpen, setIsAddVisitOpen] = useState(false)
+  const [newVisit, setNewVisit] = useState({
+    dateOfAncContact: "",
+    gestationalAge: "",
+    facilityName: "",
+    facilityAddress: ""
+  })
+  // Observation state
+  const [observations, setObservations] = useState<any[]>([])
+  const [observationsLoading, setObservationsLoading] = useState(true)
+  const [isAddObsOpen, setIsAddObsOpen] = useState(false)
+  const [newObs, setNewObs] = useState({
+    encounterId: "",
+    code: { system: "http://loinc.org", code: "", display: "" },
+    value: "",
+    unit: "",
+    effectiveDateTime: ""
+  })
+  const [addingObs, setAddingObs] = useState(false)
+  const [addObsError, setAddObsError] = useState("")
+  const [addingVisit, setAddingVisit] = useState(false)
+  const [addVisitError, setAddVisitError] = useState("")
+
+  // Add state for formatted dates
+  const [dueDateDisplay, setDueDateDisplay] = useState("");
+  const [dueMonthDisplay, setDueMonthDisplay] = useState("");
+  const [firstVisitDateDisplay, setFirstVisitDateDisplay] = useState("");
+  const [nineMonthDateDisplay, setNineMonthDateDisplay] = useState("");
+  const [visitDatesDisplay, setVisitDatesDisplay] = useState<{[visitNum: number]: string}>({});
 
   useEffect(() => {
-    async function fetchPatient() {
-      setLoading(true)
-      setError(null)
-      try {
-        const docRef = doc(db, "ancRecords", patientId)
-        const docSnap = await getDoc(docRef)
-        if (docSnap.exists()) {
-          const data = docSnap.data()
-          setPatient(data)
-        } else {
-          setError("No such patient document.")
-        }
-      } catch (err) {
-        setError("Failed to fetch patient data.")
-      } finally {
-        setLoading(false)
+    // Format all dates after hydration
+    if (safePatient?.presentPregnancy?.dateOfAncContact) setDueDateDisplay(new Date(safePatient.presentPregnancy.dateOfAncContact.seconds * 1000).toLocaleDateString());
+    if (safePatient?.presentPregnancy?.dateOfAncContact) setDueMonthDisplay(new Date(safePatient.presentPregnancy.dateOfAncContact.seconds * 1000).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }));
+    if (safePatient?.visit1?.presentPregnancy?.dateOfAncContact) setFirstVisitDateDisplay(new Date(safePatient.visit1.presentPregnancy.dateOfAncContact.seconds * 1000).toLocaleDateString());
+    if (safePatient?.presentPregnancy?.dateOfAncContact) {
+      const dueDate = safePatient.presentPregnancy.dateOfAncContact ? new Date(safePatient.presentPregnancy.dateOfAncContact.seconds * 1000) : null;
+      if (dueDate) {
+        const nineMonthDate = new Date(dueDate);
+        nineMonthDate.setMonth(dueDate.getMonth() - 1);
+        setNineMonthDateDisplay(nineMonthDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
       }
     }
-    fetchPatient()
-  }, [patientId])
+    // Visit dates
+    const visitDates: {[visitNum: number]: string} = {};
+    for (let visitNum = 1; visitNum <= 8; visitNum++) {
+      const visit = safePatient[`visit${visitNum}`];
+      if (visit?.presentPregnancy?.dateOfAncContact) {
+        const d = new Date(visit.presentPregnancy.dateOfAncContact.seconds * 1000);
+        visitDates[visitNum] = d.toLocaleDateString();
+      }
+    }
+    setVisitDatesDisplay(visitDates);
+  }, [safePatient]);
 
-  if (loading) {
-    return <div>Loading patient data...</div>
-  }
-  if (error) {
-    return <div>Error: {error}</div>
-  }
-  if (!patient) {
+  if (!safePatient) {
     return <div>Patient not found</div>
   }
 
   // Extract and normalize patient fields for display
-  const visit1 = patient.visit1 || {}
+  const visit1 = safePatient.visit1 || {}
   const basicInfo = visit1.basicInfo || {}
   const presentPregnancy = visit1.presentPregnancy || {}
   const vitals = visit1.vitals || {}
@@ -91,7 +153,7 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
     let count = 0;
     // Only count ANC visits 1-8, exclude delivery visit
     for (let i = 1; i <= 8; i++) {
-      if (patient[`visit${i}`] && Object.keys(patient[`visit${i}`]).length > 0) {
+      if (safePatient[`visit${i}`] && Object.keys(safePatient[`visit${i}`]).length > 0) {
         count++;
       }
     }
@@ -120,11 +182,9 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
     dueDate = dueDateObj
   }
   
-  const dueDateString = dueDate ? dueDate.toLocaleDateString() : "-"
-  
   // Status and other info
-  const hasDelivered = patient.visitdelivery && Object.keys(patient.visitdelivery).length > 0;
-  const dueMonthString = hasDelivered ? "Delivered" : (dueDate ? dueDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "Not set")
+  const hasDelivered = safePatient.visitdelivery && Object.keys(safePatient.visitdelivery).length > 0;
+  const dueMonthString = hasDelivered ? "Delivered" : (dueDate ? dueMonthDisplay : "Not set")
   
   // Calculate trimester based on current gestational age
   const getTrimester = (weeks: number) => {
@@ -159,6 +219,19 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
   const labResults = [] // Not in the structure, empty array
   const appointments = [] // Not in the structure, empty array
 
+  // Ensure riskLevel is a string for comparison
+  const riskLevelStr = String(riskLevel)
+
+  const handleAddVisit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Optionally: update local state to add a visit
+  };
+
+  const handleAddObservation = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Optionally: update local state to add an observation
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -177,8 +250,8 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
             <Badge variant={status === "Delivered" ? "secondary" : status === "Active" ? "default" : "secondary"} className="text-sm">
               {status}
             </Badge>
-            <Badge variant={riskLevel === "High" ? "destructive" : riskLevel === "Medium" ? "default" : "secondary"} className="text-sm">
-              {riskLevel} Risk
+            <Badge variant={riskLevelStr === 'High' ? 'destructive' : riskLevelStr === 'Medium' ? 'default' : 'secondary'} className="text-sm">
+              {riskLevelStr} Risk
             </Badge>
           </div>
         </div>
@@ -240,7 +313,7 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Due Date:</span>
-                      <span className="font-medium">{dueDateString}</span>
+                      <span className="font-medium">{dueDateDisplay}</span>
                     </div>
                   </div>
                 </div>
@@ -394,13 +467,13 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="flex justify-between items-center p-3 bg-white rounded-lg border">
                           <span className="text-sm font-medium text-gray-600">Expected Due Date</span>
-                          <span className="text-sm font-semibold text-orange-600">{dueDateString}</span>
+                          <span className="text-sm font-semibold text-orange-600">{dueDateDisplay}</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-white rounded-lg border">
                           <span className="text-sm font-medium text-gray-600">First Visit Week</span>
                           <span className="text-sm font-semibold text-blue-600">
                             {(() => {
-                              const firstVisit = patient.visit1;
+                              const firstVisit = safePatient.visit1;
                               if (firstVisit?.presentPregnancy?.gestationalAge) {
                                 return `${firstVisit.presentPregnancy.gestationalAge} weeks`;
                               }
@@ -411,14 +484,7 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                         <div className="flex justify-between items-center p-3 bg-white rounded-lg border">
                           <span className="text-sm font-medium text-gray-600">9-Month Mark</span>
                           <span className="text-sm font-semibold text-purple-600">
-                            {(() => {
-                              if (dueDate) {
-                                const nineMonthDate = new Date(dueDate);
-                                nineMonthDate.setMonth(dueDate.getMonth() - 1);
-                                return nineMonthDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                              }
-                              return "Not calculated";
-                            })()}
+                            {nineMonthDateDisplay}
                           </span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-white rounded-lg border">
@@ -480,7 +546,7 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                           <div className="text-xs text-muted-foreground">Remaining</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-lg font-semibold text-orange-600">{dueDateString}</div>
+                          <div className="text-lg font-semibold text-orange-600">{dueDateDisplay}</div>
                           <div className="text-xs text-muted-foreground">Expected Due Date</div>
                         </div>
                       </div>
@@ -489,10 +555,10 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                 <CardContent>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {[1, 2, 3, 4, 5, 6, 7, 8].map((visitNum) => {
-                        const visit = patient[`visit${visitNum}`];
+                        const visit = safePatient[`visit${visitNum}`];
                         const hasFlag = visit?.flags || visit?.riskFactors || visit?.complications || visit?.abnormalities;
                         const visitDate = visit?.presentPregnancy?.dateOfAncContact ? 
-                          new Date(visit.presentPregnancy.dateOfAncContact.seconds * 1000).toLocaleDateString() : null;
+                          visitDatesDisplay[visitNum] : null;
                         const gestationalAge = visit?.presentPregnancy?.gestationalAge;
                         const isCurrentVisit = visitNum === totalVisits;
                         const isFutureVisit = visitNum > totalVisits;
@@ -609,12 +675,12 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                         </div>
                         <div className="text-center">
                           <div className="text-2xl font-bold text-red-600">
-                            {[1, 2, 3, 4, 5, 6, 7, 8].filter(v => patient[`visit${v}`]?.flags || patient[`visit${v}`]?.riskFactors || patient[`visit${v}`]?.complications || patient[`visit${v}`]?.abnormalities).length}
+                            {[1, 2, 3, 4, 5, 6, 7, 8].filter(v => safePatient[`visit${v}`]?.flags || safePatient[`visit${v}`]?.riskFactors || safePatient[`visit${v}`]?.complications || safePatient[`visit${v}`]?.abnormalities).length}
                           </div>
                           <div className="text-muted-foreground">Flagged Visits</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-lg font-semibold text-orange-600">{dueDateString}</div>
+                          <div className="text-lg font-semibold text-orange-600">{dueDateDisplay}</div>
                           <div className="text-muted-foreground">Due Date</div>
                         </div>
                       </div>
@@ -660,7 +726,7 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
                           <label className="text-sm font-medium text-muted-foreground">Visit Date</label>
                           <p className="text-sm">
                             {selectedVisit.visit.presentPregnancy?.dateOfAncContact ? 
-                              new Date(selectedVisit.visit.presentPregnancy.dateOfAncContact.seconds * 1000).toLocaleDateString() : 
+                              visitDatesDisplay[selectedVisit.visitNum] : 
                               'Not recorded'
                             }
                           </p>
@@ -823,6 +889,72 @@ export function PatientDetail({ patientId, onBack }: PatientDetailProps) {
           </div>
         </div>
       )}
+      {/* Add Visit Modal */}
+      <Dialog open={isAddVisitOpen} onOpenChange={setIsAddVisitOpen}>
+        <DialogContent className="max-w-md w-full">
+          <DialogHeader>
+            <DialogTitle>Add New Visit (Encounter)</DialogTitle>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleAddVisit}>
+            <div>
+              <label className="block text-sm font-medium mb-1">Visit Date *</label>
+              <input type="date" className="w-full border rounded px-2 py-1" value={newVisit.dateOfAncContact} onChange={e => setNewVisit(v => ({ ...v, dateOfAncContact: e.target.value }))} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Gestational Age (weeks)</label>
+              <input type="number" className="w-full border rounded px-2 py-1" value={newVisit.gestationalAge} onChange={e => setNewVisit(v => ({ ...v, gestationalAge: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Facility Name</label>
+              <input className="w-full border rounded px-2 py-1" value={newVisit.facilityName} onChange={e => setNewVisit(v => ({ ...v, facilityName: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Facility Address</label>
+              <input className="w-full border rounded px-2 py-1" value={newVisit.facilityAddress} onChange={e => setNewVisit(v => ({ ...v, facilityAddress: e.target.value }))} />
+            </div>
+            {addVisitError && <div className="text-red-600 text-sm">{addVisitError}</div>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsAddVisitOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={addingVisit}>{addingVisit ? "Adding..." : "Add Visit"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      {/* Add Observation Modal */}
+      <Dialog open={isAddObsOpen} onOpenChange={setIsAddObsOpen}>
+        <DialogContent className="max-w-md w-full">
+          <DialogHeader>
+            <DialogTitle>Add New Observation</DialogTitle>
+          </DialogHeader>
+          <form className="space-y-4" onSubmit={handleAddObservation}>
+            <div>
+              <label className="block text-sm font-medium mb-1">Encounter ID *</label>
+              <input type="text" className="w-full border rounded px-2 py-1" value={newObs.encounterId} onChange={e => setNewObs(v => ({ ...v, encounterId: e.target.value }))} required />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">LOINC Code *</label>
+              <input type="text" className="w-full border rounded px-2 py-1" value={newObs.code.code} onChange={e => setNewObs(v => ({ ...v, code: { ...v.code, code: e.target.value } }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Value *</label>
+              <input type="text" className="w-full border rounded px-2 py-1" value={newObs.value} onChange={e => setNewObs(v => ({ ...v, value: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Unit</label>
+              <input type="text" className="w-full border rounded px-2 py-1" value={newObs.unit} onChange={e => setNewObs(v => ({ ...v, unit: e.target.value }))} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Effective Date/Time</label>
+              <input type="datetime-local" className="w-full border rounded px-2 py-1" value={newObs.effectiveDateTime} onChange={e => setNewObs(v => ({ ...v, effectiveDateTime: e.target.value }))} />
+            </div>
+            {addObsError && <div className="text-red-600 text-sm">{addObsError}</div>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setIsAddObsOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={addingObs}>{addingObs ? "Adding..." : "Add Observation"}</Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
       </div>
   )
 }

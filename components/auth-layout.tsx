@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react"
-import { useAuth } from "../hooks/use-auth"
+import { useLocalAuth } from "../hooks/use-auth"
 import { useRouter } from "next/navigation"
 
 interface AuthLayoutProps {
@@ -9,7 +9,7 @@ interface AuthLayoutProps {
 }
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
-  const { user, loading } = useAuth()
+  const { role, loading } = useLocalAuth()
   const router = useRouter()
 
   // Show loading spinner while checking authentication
@@ -22,7 +22,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   }
 
   // Redirect to dashboard if already authenticated
-  if (user) {
+  if (role) {
     router.push("/")
     return null
   }

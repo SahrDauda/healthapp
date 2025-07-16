@@ -13,10 +13,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { SidebarTrigger } from "@/components/ui/sidebar"
-import { useAuth } from "@/hooks/use-auth";
+import { useLocalAuth } from "@/hooks/use-auth";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useEffect, useState } from "react"
-import { getFirestore, doc, getDoc } from "firebase/firestore";
 
 interface DashboardHeaderProps {
   onLogout: () => void
@@ -27,22 +26,20 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenuOpen = false }: DashboardHeaderProps) {
   const [mounted, setMounted] = useState(false);
-  const { user } = useAuth();
+  const { role } = useLocalAuth();
   const [userData, setUserData] = useState({ name: "No Name" });
   const isMobileMenu = useIsMobile();
 
   useEffect(() => {
     setMounted(true);
-    const fetchUserData = async () => {
-      const db = getFirestore();
-      const userRef = doc(db, "users", "9d4jeTchiRP9GKAa62r2");
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-        setUserData({ name: data.name || "No Name" });
-      }
-    };
-    fetchUserData();
+    // Remove: const db = getFirestore();
+    // Remove: const userRef = doc(db, "users", "9d4jeTchiRP9GKAa62r2");
+    // Remove: const userSnap = await getDoc(userRef);
+    // Remove: if (userSnap.exists()) {
+    // Remove:   const data = userSnap.data();
+    // Remove:   setUserData({ name: data.name || "No Name" });
+    // Remove: }
+    setUserData({ name: "John Doe" }); // Static dummy data
   }, []);
 
   if (!mounted) {
@@ -130,13 +127,13 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
               >
                 <Avatar className="h-8 w-8 ring-2 ring-white-500">
                   <AvatarFallback className="bg-maternal-green-500 text-white font-bold flex items-center justify-center text-xl">
-                    {(user?.email || "?").charAt(0).toUpperCase()}
+                    {(role ? role.charAt(0).toUpperCase() : "?")}
                   </AvatarFallback>
                 </Avatar>
                 {!isMobile && (
                   <div className="hidden sm:flex flex-col items-start">
                     <span className="text-sm font-medium text-green-800">{userData.name}</span>
-                    <span className="text-xs text-white-600">{user?.email}</span>
+                    <span className="text-xs text-white-600">{role}</span>
                   </div>
                 )}
                 <ChevronDown className="h-4 w-4 text-white-700" />
@@ -146,7 +143,7 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
                   <span className="text-sm font-medium text-green-800">{userData.name}</span>
-                  <span className="text-xs text-green-600">{user?.email}</span>
+                  <span className="text-xs text-green-600">{role}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white-200" />
