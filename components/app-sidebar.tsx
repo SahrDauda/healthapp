@@ -15,8 +15,6 @@ import {
 } from "@/components/ui/sidebar"
 import { Badge } from "@/components/ui/badge"
 import { useEffect, useState } from "react"
-import PatientsPage from "@/components/patients";
-import ReferralPage from "@/components/referral";
 
 interface AppSidebarProps {
   activeView: string

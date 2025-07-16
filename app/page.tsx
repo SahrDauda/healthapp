@@ -49,11 +49,11 @@ export default function Dashboard() {
     // Route for clinicians
     if (role === 'clinician') {
       if (pathname === '/patients') {
-        const PatientsPage = require('./patients').default;
+        const PatientsPage = require('../components/patients').default;
         return <PatientsPage />;
       }
       if (pathname === '/referral') {
-        const ReferralPage = require('./referral').default;
+        const ReferralPage = require('../components/referral').default;
         return <ReferralPage />;
       }
       const ClinicianDashboard = require('../components/clinician-dashboard').ClinicianDashboard;
