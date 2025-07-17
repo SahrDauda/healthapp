@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PatientDetail } from "@/components/patient-detail";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 // Define a type for Patient
 interface Patient {
@@ -82,6 +84,12 @@ export default function PatientsPage() {
 
   const filtered = patients.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
 
+  // Dashboard stats
+  const totalPatients = patients.length;
+  const activePatients = patients.filter(p => p.status === "Active").length;
+  const deliveredPatients = patients.filter(p => p.status === "Delivered").length;
+  const highRiskPatients = patients.filter(p => p.riskLevel === "High").length;
+
   function handleAddPatient(e: React.FormEvent) {
     e.preventDefault();
     setPatients([
@@ -101,21 +109,76 @@ export default function PatientsPage() {
         </div>
         <Button onClick={() => setShowAdd(true)}>Add Patient</Button>
       </div>
+      {/* Dashboard summary */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
+        <Card className="bg-gradient-to-br from-green-600 to-green-700 text-white">
+          <CardHeader className="text-white">
+            <CardTitle className="text-white">Total Patients</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalPatients}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white">
+          <CardHeader className="text-white">
+            <CardTitle className="text-white">Active</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activePatients}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-red-600 to-red-700 text-white">
+          <CardHeader className="text-white">
+            <CardTitle className="text-white">Delivered</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{deliveredPatients}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-yellow-600 to-yellow-700 text-white">
+          <CardHeader className="text-white">
+            <CardTitle className="text-white">High Risk</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{highRiskPatients}</div>
+          </CardContent>
+        </Card>
+      </div>
       <Input placeholder="Search patients..." value={search} onChange={e => setSearch(e.target.value)} className="max-w-xs" />
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((patient) => (
-          <Card key={patient.id} className="cursor-pointer hover:shadow-lg" onClick={() => { setSelectedPatient(patient); setShowDetail(true); }}>
-            <CardHeader>
-              <CardTitle>{patient.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>Age: {patient.age}</div>
-              <div>Status: {patient.status}</div>
-              <div>Weeks: {patient.weeks}</div>
-              <div>Due: {patient.dueDate}</div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Table view for patients */}
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Age</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Weeks</TableHead>
+              <TableHead>Due Date</TableHead>
+              <TableHead>Risk</TableHead>
+              <TableHead>Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((patient) => (
+              <TableRow key={patient.id} className="hover:bg-gray-50 cursor-pointer">
+                <TableCell>{patient.name}</TableCell>
+                <TableCell>{patient.age}</TableCell>
+                <TableCell>
+                  <Badge variant={patient.status === "Delivered" ? "secondary" : "default"}>{patient.status}</Badge>
+                </TableCell>
+                <TableCell>{patient.weeks}</TableCell>
+                <TableCell>{patient.dueDate}</TableCell>
+                <TableCell>
+                  <Badge variant={patient.riskLevel === "High" ? "destructive" : patient.riskLevel === "Medium" ? "secondary" : "outline"}>{patient.riskLevel}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Button size="sm" variant="outline" onClick={() => { setSelectedPatient(patient); setShowDetail(true); }}>View</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
       {/* Add Patient Modal */}
       {showAdd && (

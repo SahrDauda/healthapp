@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 const dummyReferrals = [
   { id: "1", patient: "Marie Kamara", reason: "High blood pressure", date: "2024-04-01", status: "Pending" },
@@ -12,6 +14,12 @@ export default function ReferralPage() {
   const [referrals, setReferrals] = useState(dummyReferrals);
   const [showAdd, setShowAdd] = useState(false);
   const [newReferral, setNewReferral] = useState({ patient: "", reason: "", date: "", status: "Pending" });
+
+  // Dashboard stats
+  const totalReferrals = referrals.length;
+  const pendingReferrals = referrals.filter(r => r.status === "Pending").length;
+  const completedReferrals = referrals.filter(r => r.status === "Completed").length;
+  const uniquePatients = Array.from(new Set(referrals.map(r => r.patient))).length;
 
   function handleAddReferral(e: React.FormEvent) {
     e.preventDefault();
@@ -32,19 +40,65 @@ export default function ReferralPage() {
         </div>
         <Button onClick={() => setShowAdd(true)}>Add Referral</Button>
       </div>
-      <div className="grid gap-3 sm:gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {referrals.map((ref) => (
-          <Card key={ref.id}>
-            <CardHeader>
-              <CardTitle>{ref.patient}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div>Reason: {ref.reason}</div>
-              <div>Date: {ref.date}</div>
-              <div>Status: {ref.status}</div>
-            </CardContent>
-          </Card>
-        ))}
+      {/* Dashboard summary */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-4">
+        <Card className="bg-gradient-to-br from-green-600 to-green-700 text-white">
+          <CardHeader className="text-white">
+            <CardTitle className="text-white">Total Referrals</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalReferrals}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-600 to-blue-700 text-white">
+          <CardHeader className="text-white">
+            <CardTitle className="text-white">Pending</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{pendingReferrals}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-red-600 to-red-700 text-white">
+          <CardHeader className="text-white">
+            <CardTitle className="text-white">Completed</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{completedReferrals}</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-yellow-600 to-yellow-700 text-white">
+          <CardHeader className="text-white">
+            <CardTitle className="text-white">Unique Patients</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{uniquePatients}</div>
+          </CardContent>
+        </Card>
+      </div>
+      {/* Table view for referrals */}
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Patient</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {referrals.map((ref) => (
+              <TableRow key={ref.id} className="hover:bg-gray-50 cursor-pointer">
+                <TableCell>{ref.patient}</TableCell>
+                <TableCell>{ref.reason}</TableCell>
+                <TableCell>{ref.date}</TableCell>
+                <TableCell>
+                  <Badge variant={ref.status === "Completed" ? "secondary" : "default"}>{ref.status}</Badge>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </div>
       {/* Add Referral Modal */}
       {showAdd && (
