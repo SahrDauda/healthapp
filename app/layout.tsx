@@ -19,7 +19,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   const isMobile = useIsMobile();
 
   // Determine active view from URL if not provided
-  const activeView = pathname === "/report" ? "report" : "dashboard";
+  const activeView = pathname === "/report" ? "report" : 
+                    pathname === "/patients" ? "patients" :
+                    pathname === "/referral" ? "referral" :
+                    pathname === "/" ? "dashboard" : "dashboard";
 
   const handleLogout = () => {
     logout();
