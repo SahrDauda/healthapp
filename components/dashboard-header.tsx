@@ -27,20 +27,19 @@ interface DashboardHeaderProps {
 export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenuOpen = false }: DashboardHeaderProps) {
   const [mounted, setMounted] = useState(false);
   const { role } = useLocalAuth();
-  const [userData, setUserData] = useState({ name: "No Name" });
+  const [userData, setUserData] = useState({ name: '', email: '' });
   const isMobileMenu = useIsMobile();
 
   useEffect(() => {
     setMounted(true);
-    // Remove: const db = getFirestore();
-    // Remove: const userRef = doc(db, "users", "9d4jeTchiRP9GKAa62r2");
-    // Remove: const userSnap = await getDoc(userRef);
-    // Remove: if (userSnap.exists()) {
-    // Remove:   const data = userSnap.data();
-    // Remove:   setUserData({ name: data.name || "No Name" });
-    // Remove: }
-    setUserData({ name: "John Doe" }); // Static dummy data
+    if (typeof window !== 'undefined') {
+      const name = localStorage.getItem('adminName') || '';
+      const email = localStorage.getItem('adminEmail') || '';
+      setUserData({ name, email });
+    }
   }, []);
+
+  const firstLetter = userData.name ? userData.name.charAt(0).toUpperCase() : (role ? role.charAt(0).toUpperCase() : '?');
 
   if (!mounted) {
     return null;
@@ -127,13 +126,13 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
               >
                 <Avatar className="h-8 w-8 ring-2 ring-white-500">
                   <AvatarFallback className="bg-maternal-green-500 text-white font-bold flex items-center justify-center text-xl">
-                    {(role ? role.charAt(0).toUpperCase() : "?")}
+                    {firstLetter}
                   </AvatarFallback>
                 </Avatar>
                 {!isMobile && (
                   <div className="hidden sm:flex flex-col items-start">
-                    <span className="text-sm font-medium text-green-800">{userData.name}</span>
-                    <span className="text-xs text-white-600">{role}</span>
+                    <span className="text-sm font-medium text-green-800">{userData.name || 'No Name'}</span>
+                    <span className="text-xs text-white-600">{userData.email || role}</span>
                   </div>
                 )}
                 <ChevronDown className="h-4 w-4 text-white-700" />
@@ -142,8 +141,8 @@ export function DashboardHeader({ onLogout, onMenuToggle, isMobile, isMobileMenu
             <DropdownMenuContent align="end" className="w-56 bg-white border-white-300">
               <DropdownMenuLabel>
                 <div className="flex flex-col space-y-1">
-                  <span className="text-sm font-medium text-green-800">{userData.name}</span>
-                  <span className="text-xs text-green-600">{role}</span>
+                  <span className="text-sm font-medium text-green-800">{userData.name || 'No Name'}</span>
+                  <span className="text-xs text-green-600">{userData.email || role}</span>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-white-200" />

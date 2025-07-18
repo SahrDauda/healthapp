@@ -31,12 +31,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false)
   // Remove role state and handleRoleChange
 
-  // Demo credentials for both roles
-  const demoCredentials = {
-    admin: { email: 'doctor@maternalcare.com', password: 'dauda2019' },
-    clinician: { email: 'clinician@maternalcare.com', password: 'clinician2024' },
-  };
-
   // Remove role state and handleRoleChange
 
   // Remove: const auth = getAuth(app)
@@ -65,33 +59,39 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     if (!validateForm()) return;
     setIsLoading(true);
     setErrors({});
-    // Check which role matches the credentials
-    if (
-      formData.email === demoCredentials.admin.email &&
-      formData.password === demoCredentials.admin.password
-    ) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('userRole', 'admin');
-        window.location.reload(); // Force reload to update app state
+    try {
+      const res = await fetch('http://localhost:3000/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email, password: formData.password })
+      });
+      const data = await res.json();
+      if (res.ok && data.token) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('adminToken', data.token);
+          localStorage.setItem('adminName', data.name || '');
+          localStorage.setItem('adminEmail', data.email || '');
+          localStorage.setItem('userRole', 'admin');
+          onLoginSuccess && onLoginSuccess();
+          window.location.reload();
+        }
+        setIsLoading(false);
+        return;
+      } else {
+        setErrors({ general: data.error || 'Invalid email or password.' });
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
-      return;
-    } else if (
-      formData.email === demoCredentials.clinician.email &&
-      formData.password === demoCredentials.clinician.password
-    ) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('userRole', 'clinician');
-        window.location.reload(); // Force reload to update app state
-      }
-      setIsLoading(false);
-      return;
-    } else {
-      setErrors({ general: 'Invalid email or password.' });
+    } catch (err) {
+      setErrors({ general: 'Network error. Please try again.' });
       setIsLoading(false);
       return;
     }
   }
+
+  const adminName = typeof window !== 'undefined' ? localStorage.getItem('adminName') : '';
+  const adminEmail = typeof window !== 'undefined' ? localStorage.getItem('adminEmail') : '';
+  const firstLetter = adminName ? adminName.charAt(0).toUpperCase() : '';
 
   return (
     <div className="flex items-center justify-center h-screen overflow-hidden">
